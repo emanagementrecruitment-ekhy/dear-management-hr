@@ -47,7 +47,8 @@ const fontVariables = [
 
 export const metadata: Metadata = {
   title: "DEAR Management",
-  description: "Portal operasional DEAR Management — absensi GPS, voucher komisi, dan kasbon karyawan.",
+  description:
+    "DEAR Management — agensi manajemen talenta & entertainment yang menghubungkan talenta profesional dengan mitra outlet terbaik di Jakarta.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

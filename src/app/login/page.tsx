@@ -166,7 +166,7 @@ export default function LoginPage() {
               <span className="bm-shimmer-rosegold">DEAR MANAGEMENT</span>
             </div>
             <div className="text-[10.5px] tracking-[0.24em] text-ar-dim mt-1.5 uppercase">
-              Absensi • Voucher • Kasbon Karyawan
+              Talent &amp; Entertainment Management
             </div>
           </div>
         </div>
