@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
 import Badge from "@/components/Badge";
+import { EMPLOYEE_LEVELS, VOUCHER_LABEL, VOUCHER_AMOUNT } from "@/lib/constants";
+import { fmtRp } from "@/lib/format";
+
+const lowestLevel = EMPLOYEE_LEVELS[0];
+const highestLevel = EMPLOYEE_LEVELS[EMPLOYEE_LEVELS.length - 2];
 
 interface AttendanceRow {
   name: string;
@@ -19,8 +24,8 @@ interface Overview {
   bars: { label: string; value: number; heightPct: number }[];
   barsFrom: string;
   barsTo: string;
-  silverAll: number;
-  platAll: number;
+  lowestTierAll: number;
+  highestTierAll: number;
   attendanceMonthLabel: string;
   attendanceMinDays: number;
   attendanceMonthly: AttendanceRow[];
@@ -101,12 +106,16 @@ export default function RingkasanPage() {
             </div>
             <div className="mt-auto pt-3.5 grid gap-1.5 text-[11.5px] text-ar-dim">
               <div className="flex justify-between">
-                <span>SILVER (150.000)</span>
-                <span className="text-ar-text">{data?.silverAll ?? 0} voucher</span>
+                <span>
+                  {VOUCHER_LABEL[lowestLevel]} ({fmtRp(VOUCHER_AMOUNT[lowestLevel])})
+                </span>
+                <span className="text-ar-text">{data?.lowestTierAll ?? 0} voucher</span>
               </div>
               <div className="flex justify-between">
-                <span>PLATINUM / JASMINE (400.000)</span>
-                <span className="text-ar-text">{data?.platAll ?? 0} voucher</span>
+                <span>
+                  {VOUCHER_LABEL[highestLevel]} ({fmtRp(VOUCHER_AMOUNT[highestLevel])})
+                </span>
+                <span className="text-ar-text">{data?.highestTierAll ?? 0} voucher</span>
               </div>
             </div>
           </div>

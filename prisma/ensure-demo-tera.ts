@@ -23,7 +23,7 @@ const DEMO_TERA = {
   email: "grace.demo@dearmanagement.id",
   phone: "081200000064",
   role: "Tera",
-  level: "GOLD",
+  level: "LEVEL_4",
   ageYears: 21,
   weightKg: 64,
   heightCm: 160,

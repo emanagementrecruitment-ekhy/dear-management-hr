@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireSession, apiError } from "@/lib/api-auth";
-import { OFFICE_ROLES, HQ, ATTENDANCE_RADIUS_KM, ATTENDANCE_MIN_DAYS, usesVcr } from "@/lib/constants";
+import { OFFICE_ROLES, HQ, ATTENDANCE_RADIUS_KM, ATTENDANCE_MIN_DAYS, usesVcr, EMPLOYEE_LEVELS } from "@/lib/constants";
 import { shortRp, dLabel, dayKey, timeLabel, monthLabel } from "@/lib/format";
 import { parseMonth } from "@/lib/period";
 
@@ -117,8 +117,8 @@ export async function GET() {
       bars: days.map((d) => ({ label: d.label, value: d.sum, heightPct: Math.max(3, (d.sum / maxSum) * 100) })),
       barsFrom: days[0]?.label ?? "",
       barsTo: days[days.length - 1]?.label ?? "",
-      silverAll: vouchers14.filter((v) => v.category === "SILVER").length,
-      platAll: vouchers14.filter((v) => v.category === "PLATINUM").length,
+      lowestTierAll: vouchers14.filter((v) => v.category === EMPLOYEE_LEVELS[0]).length,
+      highestTierAll: vouchers14.filter((v) => v.category === EMPLOYEE_LEVELS[EMPLOYEE_LEVELS.length - 2]).length,
       hqLabel: `${HQ.lat.toFixed(4)}, ${HQ.lng.toFixed(4)} · radius ${ATTENDANCE_RADIUS_KM} km`,
       attendanceMonthLabel: monthLabel(currentMonth),
       attendanceMinDays: ATTENDANCE_MIN_DAYS,

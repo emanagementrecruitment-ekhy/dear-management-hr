@@ -32,7 +32,7 @@ async function main() {
       email: CONSULTANT_ACCOUNT.email,
       phone: CONSULTANT_ACCOUNT.phone,
     },
-    create: { ...CONSULTANT_ACCOUNT, level: "PLATINUM", homeLat: HQ.lat, homeLng: HQ.lng, homePlace: "Kantor Pusat Jakarta" },
+    create: { ...CONSULTANT_ACCOUNT, level: "MANUAL", homeLat: HQ.lat, homeLng: HQ.lng, homePlace: "Kantor Pusat" },
   });
   console.log(`[ensure-office-accounts] consultant pinned to ${CONSULTANT_ACCOUNT.email}`);
 }
