@@ -53,8 +53,28 @@ jobs:
         run: npm install -g @bubblewrap/cli
 
       - name: Restore signing keystore
+        # Pass the secret through env rather than interpolating it directly
+        # into the script text (GitHub's own recommended pattern) — direct
+        # `${{ secrets.X }}` interpolation substitutes the raw value into the
+        # command before the shell parses it, which can fail in confusing,
+        # silent ways depending on the value's exact bytes. Diagnostics here
+        # print harmless metadata only (lengths/hashes), never the secret
+        # itself, so a failure is debuggable without ever leaking the key.
         working-directory: android
-        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android.keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::ANDROID_KEYSTORE_BASE64 secret is empty or not set."
+            exit 1
+          fi
+          echo "Secret length (base64 chars): ${#KEYSTORE_BASE64}"
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > android.keystore
+          if [ ! -s android.keystore ]; then
+            echo "::error::Decoded android.keystore is empty — the secret is not valid base64."
+            exit 1
+          fi
+          echo "Decoded keystore size: $(stat -c%s android.keystore) bytes"
 
       - name: Point Bubblewrap at the JDK/Android SDK installed above
         # `bubblewrap updateConfig` always goes through Bubblewrap's interactive
