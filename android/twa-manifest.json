@@ -20,7 +20,7 @@
     "path": "./android.keystore",
     "alias": "dearmanagement"
   },
-  "appVersionCode": 3,
+  "appVersionCode": 4,
   "appVersion": "1.0.0",
   "shortcuts": [],
   "generatorApp": "manual",
