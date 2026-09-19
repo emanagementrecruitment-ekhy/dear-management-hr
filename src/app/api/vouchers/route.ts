@@ -1,0 +1,127 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { requireSession, apiError } from "@/lib/api-auth";
+import { parsePeriod, periodStart, PERIOD_LABEL } from "@/lib/period";
+import { fmtRp, dayLabel, timeLabel, dLabel } from "@/lib/format";
+import {
+  VOUCHER_LABEL,
+  VOUCHER_STATUS_LABEL,
+  employeeRate,
+  usesVcr,
+  type EmployeeLevel,
+  type VoucherStatus,
+} from "@/lib/constants";
+import { notifyOffice } from "@/lib/notify";
+
+export async function GET(req: Request) {
+  try {
+    const session = await requireSession(["KARYAWAN", "SUPERVISOR"]);
+    const { searchParams } = new URL(req.url);
+    const period = parsePeriod(searchParams.get("period"));
+    const now = new Date();
+    const start = periodStart(now, period);
+
+    const employee = await prisma.employee.findUnique({ where: { id: session.employeeId } });
+    if (!employee) return NextResponse.json({ error: "Karyawan tidak ditemukan." }, { status: 404 });
+    const vcr = usesVcr(employee.role);
+    const myLevel = employee.level as EmployeeLevel;
+
+    if (!vcr) {
+      return NextResponse.json({
+        usesVcr: false,
+        salary: fmtRp(employee.salary ?? 0),
+      });
+    }
+
+    const [all, periodVouchers] = await Promise.all([
+      prisma.voucher.findMany({ where: { employeeId: session.employeeId } }),
+      prisma.voucher.findMany({
+        where: { employeeId: session.employeeId, occurredAt: { gte: start } },
+        orderBy: { occurredAt: "desc" },
+      }),
+    ]);
+
+    return NextResponse.json({
+      usesVcr: true,
+      period,
+      periodLabel: PERIOD_LABEL[period],
+      periodRange: `${dLabel(start)} – ${dLabel(now)}`,
+      myLevel,
+      myLevelLabel: VOUCHER_LABEL[myLevel],
+      myRate: employeeRate(myLevel, employee.customRate),
+      myPlace: employee.homePlace,
+      vouchers: periodVouchers.map((v) => ({
+        id: v.id,
+        client: v.client,
+        dateLabel: dayLabel(v.occurredAt),
+        time: timeLabel(v.occurredAt),
+        code: v.id.slice(0, 8).toUpperCase(),
+        amountLabel: fmtRp(v.amount),
+        category: VOUCHER_LABEL[v.category as EmployeeLevel],
+        status: VOUCHER_STATUS_LABEL[v.status as VoucherStatus],
+      })),
+      periodTotal: fmtRp(periodVouchers.reduce((s, v) => s + v.amount, 0)),
+      periodCount: periodVouchers.length,
+      recentFeed: all
+        .slice()
+        .sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime())
+        .slice(0, 5)
+        .map((v) => ({
+          title: v.client,
+          meta: `${VOUCHER_LABEL[v.category as EmployeeLevel]} · ${dLabel(v.occurredAt)} ${timeLabel(v.occurredAt)}`,
+          amount: v.category === "PLATINUM" ? "+400rb" : "+150rb",
+        })),
+    });
+  } catch (e) {
+    return apiError(e);
+  }
+}
+
+/**
+ * Self-service daily income entry for field employees ("Tera"/karyawan) —
+ * they only ever input how many VCR they got today. The rate AND the
+ * location both come from the employee's own record in the DB, never from
+ * the client: rate from their registered level (a Silver-rate employee can
+ * only ever log Silver vouchers), location from their homePlace as set by
+ * head office (Data Karyawan / Lokasi & Absensi) — it isn't pickable here.
+ */
+export async function POST(req: Request) {
+  try {
+    const session = await requireSession(["KARYAWAN", "SUPERVISOR"]);
+    const body = await req.json().catch(() => null);
+
+    const qty = Math.round(Number(body?.qty));
+    const occurredAtRaw = typeof body?.occurredAt === "string" ? body.occurredAt : "";
+
+    if (!Number.isInteger(qty) || qty <= 0) {
+      return NextResponse.json({ error: "Jumlah VCR tidak valid." }, { status: 400 });
+    }
+
+    const occurredAt = occurredAtRaw ? new Date(occurredAtRaw) : new Date();
+    if (Number.isNaN(occurredAt.getTime())) return NextResponse.json({ error: "Tanggal tidak valid." }, { status: 400 });
+
+    const employee = await prisma.employee.findUnique({ where: { id: session.employeeId } });
+    if (!employee) return NextResponse.json({ error: "Karyawan tidak ditemukan." }, { status: 404 });
+    if (!usesVcr(employee.role)) {
+      return NextResponse.json({ error: "Pendapatan/VCR tidak berlaku untuk peran Anda — gaji diatur oleh admin." }, { status: 400 });
+    }
+    const level = employee.level as EmployeeLevel;
+    const amount = employeeRate(level, employee.customRate);
+
+    await prisma.voucher.createMany({
+      data: Array.from({ length: qty }, () => ({
+        employeeId: employee.id,
+        category: level,
+        client: employee.homePlace,
+        amount,
+        occurredAt,
+      })),
+    });
+
+    await notifyOffice(`Pendapatan baru dari ${employee.name} (self-entry): ${qty} voucher · ${fmtRp(amount * qty)}`);
+
+    return NextResponse.json({ ok: true, count: qty, total: amount * qty });
+  } catch (e) {
+    return apiError(e);
+  }
+}

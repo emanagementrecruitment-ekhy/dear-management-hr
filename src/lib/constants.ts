@@ -1,0 +1,205 @@
+// Enum-like string values for SQLite columns (see prisma/schema.prisma header comment).
+
+export const ACCESS_ROLES = ["KARYAWAN", "OWNER", "CONSULTANT", "ADMIN_PUSAT", "SUPERVISOR"] as const;
+export type AccessRole = (typeof ACCESS_ROLES)[number];
+
+// Full admin data access (Karyawan, Kasbon, Laporan, Lokasi & Absensi, ...).
+// SUPERVISOR (Kepala Mess) is deliberately excluded — it's a narrower,
+// view-only role scoped to Laporan Lapangan only (see requireSession calls
+// in src/app/api/admin/lapor/route.ts and src/app/admin/layout.tsx).
+export const OFFICE_ROLES: AccessRole[] = ["OWNER", "CONSULTANT", "ADMIN_PUSAT"];
+
+// Every role that should hear about day-to-day activity (new chat/report,
+// voucher/pendapatan entries, a Tera login) — OFFICE_ROLES plus SUPERVISOR
+// (Kepala Mess), who's otherwise scoped to Laporan Lapangan only. See
+// src/lib/notify.ts.
+export const NOTIFY_ROLES: AccessRole[] = ["OWNER", "CONSULTANT", "ADMIN_PUSAT", "SUPERVISOR"];
+
+// Ordered lowest to highest pendapatan/VCR — drives dropdown display order.
+// MANUAL sits last: it has no fixed rate (see VOUCHER_AMOUNT and
+// employeeRate() below — its real rate lives on Employee.customRate).
+// Placeholder tiers/rates for a fresh deployment — replace with DEAR
+// Management's real level names and rates once known.
+export const EMPLOYEE_LEVELS = ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6", "LEVEL_7", "LEVEL_8", "MANUAL"] as const;
+export type EmployeeLevel = (typeof EMPLOYEE_LEVELS)[number];
+
+export const VOUCHER_STATUSES = ["MENUNGGU_VALIDASI", "TERVALIDASI", "DICAIRKAN"] as const;
+export type VoucherStatus = (typeof VOUCHER_STATUSES)[number];
+
+export const KASBON_STATUSES = ["MENUNGGU_OWNER", "DISETUJUI", "DITOLAK"] as const;
+export type KasbonStatus = (typeof KASBON_STATUSES)[number];
+
+// MANUAL's 0 here is a placeholder — always resolve an employee's actual
+// rate through employeeRate() below, which substitutes their customRate.
+export const VOUCHER_AMOUNT: Record<EmployeeLevel, number> = {
+  LEVEL_1: 100_000,
+  LEVEL_2: 150_000,
+  LEVEL_3: 200_000,
+  LEVEL_4: 250_000,
+  LEVEL_5: 300_000,
+  LEVEL_6: 400_000,
+  LEVEL_7: 500_000,
+  LEVEL_8: 600_000,
+  MANUAL: 0,
+};
+
+export const VOUCHER_LABEL: Record<EmployeeLevel, string> = {
+  LEVEL_1: "Level 1",
+  LEVEL_2: "Level 2",
+  LEVEL_3: "Level 3",
+  LEVEL_4: "Level 4",
+  LEVEL_5: "Level 5",
+  LEVEL_6: "Level 6",
+  LEVEL_7: "Level 7",
+  LEVEL_8: "Level 8",
+  MANUAL: "MANUAL INPUT",
+};
+
+/** An employee's real per-voucher rate — MANUAL substitutes their own stored customRate. */
+export function employeeRate(level: EmployeeLevel, customRate?: number | null): number {
+  return level === "MANUAL" ? customRate ?? 0 : VOUCHER_AMOUNT[level];
+}
+
+export const KASBON_LABEL: Record<KasbonStatus, string> = {
+  MENUNGGU_OWNER: "Menunggu Owner",
+  DISETUJUI: "Disetujui",
+  DITOLAK: "Ditolak",
+};
+
+export const VOUCHER_STATUS_LABEL: Record<VoucherStatus, string> = {
+  MENUNGGU_VALIDASI: "Menunggu validasi",
+  TERVALIDASI: "Tervalidasi",
+  DICAIRKAN: "Dicairkan",
+};
+
+// DEAR Management head office — placeholder coordinates (Jakarta), update
+// once the real HQ address/coordinates are known.
+export const HQ = { lat: -6.2088, lng: 106.8456 };
+export const HQ_NAME = "Kantor Pusat";
+export const ATTENDANCE_RADIUS_KM = 500;
+
+export const SESSION_COOKIE = "arcorp_session";
+export const SESSION_TTL_SECONDS = 60 * 60 * 12; // one field shift
+
+export const OTP_TTL_SECONDS = 5 * 60;
+export const OTP_MAX_ATTEMPTS = 5;
+
+// Preset field locations (venues) offered when adding an employee. A location
+// only matters as a fallback anyway: every real GPS check-in
+// (src/app/api/attendance/checkin) overwrites it with the employee's actual
+// coordinates going forward. These venues don't have known coordinates yet,
+// so they default to HQ (0 km, dalam radius) until a real check-in happens —
+// update the lat/lng here once each venue's actual address is known.
+// Placeholder for a fresh deployment — add DEAR Management's real venues here
+// (at least one entry must stay, see EmployeeFields.tsx's default selection).
+export const FIELD_CITIES = [{ place: "KANTOR PUSAT", lat: HQ.lat, lng: HQ.lng }] as const;
+
+export const FIELD_ROLES = ["Admin", "Kepala Mess", "Koordinator", "Recruitment", "Salon", "Staff", "Tera", "Owner"] as const;
+
+// Only Peran "Tera" earns via Pendapatan/VCR (per-voucher commission) — every
+// other Peran is salaried (Gaji, a fixed monthly nominal on Employee.salary).
+// This is enforced everywhere an employee's income is read or recorded, not
+// just display: see the level/customRate vs. salary split in
+// prisma/schema.prisma and every call site that branches on usesVcr().
+export const VCR_ROLE = "Tera";
+export function usesVcr(role: string): boolean {
+  return role === VCR_ROLE;
+}
+
+// A Tera working fewer days than this in a completed month automatically
+// gets a Pinalty Absensi row on their Slip Pay (see ensureAttendancePenalty
+// in src/lib/payslip.ts). Also drives the "under minimum" flag on the
+// Ringkasan Operasional attendance dashboard.
+export const ATTENDANCE_MIN_DAYS = 20;
+
+// The self check-in box (src/lib/attendance.ts) replaced GPS login as the
+// source of "Hari Hadir" starting this month — any month before it has no
+// Attendance rows simply because the feature didn't exist yet, not because
+// nobody showed up. ensureAttendancePenalty() and the Ringkasan Operasional
+// table both skip/zero out months before this instead of reading that
+// absence as "0 hari hadir" and wrongly penalizing everyone retroactively.
+export const ATTENDANCE_CHECKIN_START_MONTH = "2026-09";
+export const ATTENDANCE_PENALTY_AMOUNT = 500_000;
+// Distinct from PAYSLIP_COST_CATEGORIES below — this one is only ever
+// applied by ensureAttendancePenalty(), never offered in the manual
+// "Tambah Rincian" dropdown, so there's exactly one way a Pinalty Absensi
+// row can appear (no risk of a duplicate manual + automatic pair).
+export const ATTENDANCE_PENALTY_CATEGORY = "Pinalty Absensi";
+
+// Preset cost/deduction categories for the Tera Slip Pay "Tambah Rincian"
+// dropdown (src/app/admin/payslip/page.tsx). Selecting one still goes
+// through the normal manual PayslipItem flow (Admin/Owner types the
+// nominal) — this only removes free-text guesswork for the categories the
+// business tracks by name. Tabungan is deliberately NOT here: it's a
+// separate running log (SavingEntry) that doesn't touch the payslip total,
+// see src/app/api/admin/savings/route.ts.
+export const PAYSLIP_COST_CATEGORIES = [
+  "Admin",
+  "Mess",
+  "Dokter/Spekulo",
+  "Salon",
+  "Loker",
+  "Test Kehamilan, HIV/AIDS",
+  "Pinalty (SOP)",
+] as const;
+
+// Peran values that come with a real elevated login (see /admin/jabatan —
+// Owner/Consultant appoint one karyawan holding this Peran into the matching
+// AccessRole). Every other Peran (Koordinator, Recruitment, Salon, Staff, Tera)
+// is purely a descriptive label with no access change.
+//
+// appointerRoles restricts who may perform THAT seat's appointment (defaults
+// to the full OWNER/CONSULTANT manager set when omitted — see MANAGERS in
+// src/app/api/admin/jabatan/route.ts). The Owner seat is deliberately
+// narrower: only Consultant (DEAR Management's own account) can install or replace
+// the business owner's login, so an Owner can never re-appoint themselves or
+// hand the seat to someone else unilaterally.
+// Owner used to be appointed here too (pick an existing Data Karyawan row).
+// It's been replaced by a dedicated one-time provisioning flow — see
+// OWNER_ACCOUNT_CODE below and /dev/nav-layout — so Jabatan Kantor now only
+// ever lists the two genuinely re-appointable office seats.
+export const APPOINTABLE_ROLES: { peran: string; accessRole: AccessRole; label: string; appointerRoles?: AccessRole[] }[] = [
+  { peran: "Admin", accessRole: "ADMIN_PUSAT", label: "Admin" },
+  { peran: "Kepala Mess", accessRole: "SUPERVISOR", label: "Kepala Mess" },
+];
+
+// The single Owner account's reserved employee code — mirrors HQ-CONSULT's
+// pattern (see prisma/ensure-office-accounts.ts). Only ever one row with
+// this code; Consultant "generates"/replaces it via
+// /api/admin/owner-identity, see src/app/dev/nav-layout.
+export const OWNER_ACCOUNT_CODE = "HQ-OWNER";
+
+// Dashboard appearance — switchable color palette and font pairing (see
+// /admin/pengaturan). Both lists double as the source of truth for
+// validating a saved AppSetting row; "classic" is DEAR Management's own
+// chrome/silver-black look and stays the default so nothing changes
+// visually until an Owner/Consultant/Admin Pusat picks something else.
+export const THEME_COLORS = [
+  { id: "classic", label: "DEAR Management Krom", desc: "Silver krom + hitam pekat (tampilan asli DEAR Management)" },
+  { id: "sand", label: "Emas Pasir", desc: "Coklat pasir hangat + krem — nuansa natural" },
+  { id: "sage", label: "Hijau Zaitun", desc: "Hijau zaitun lembut + krem" },
+  { id: "terracotta", label: "Terracotta", desc: "Oranye tanah liat + krem" },
+  { id: "rosegold", label: "Rose Gold", desc: "Merah muda keemasan — lembut dan mewah" },
+  { id: "pearl", label: "Putih Mutiara", desc: "Putih mutiara berkilau — bersih dan elegan" },
+] as const;
+export type ThemeColorId = (typeof THEME_COLORS)[number]["id"];
+export const THEME_COLOR_IDS = THEME_COLORS.map((t) => t.id) as ThemeColorId[];
+
+export const THEME_FONTS = [
+  { id: "classic", label: "Klasik", desc: "Cormorant Garamond + Manrope (tampilan asli)" },
+  { id: "modern", label: "Modern", desc: "Playfair Display + Inter" },
+  { id: "bold", label: "Tegas", desc: "Montserrat + Work Sans" },
+] as const;
+export type ThemeFontId = (typeof THEME_FONTS)[number]["id"];
+export const THEME_FONT_IDS = THEME_FONTS.map((t) => t.id) as ThemeFontId[];
+
+// Minimum days a newly uploaded logo must stay in place (see
+// /api/admin/settings/logo) before it can be replaced again.
+export const LOGO_LOCK_DAYS = 30;
+
+// The standing demo Tera account (see prisma/ensure-demo-tera.ts) — its
+// email/phone aren't real, so nobody can ever receive its OTP by email or
+// WhatsApp. issueOtp() (src/lib/otp.ts) checks this code to always surface
+// the code on-screen for this one account, in every environment including
+// production, so the demo stays usable without real delivery.
+export const DEMO_TERA_CODE = "DEMO-01";

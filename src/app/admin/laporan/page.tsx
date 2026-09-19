@@ -1,0 +1,116 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import AdminPageHeader from "@/components/admin/AdminPageHeader";
+import { VOUCHER_LABEL, type EmployeeLevel } from "@/lib/constants";
+
+type Period = "harian" | "mingguan" | "bulanan";
+
+interface ReportRow {
+  name: string;
+  level: string;
+  voucherCount: number;
+  rateLabel: string;
+  kasbon: string;
+  net: string;
+}
+
+interface Report {
+  periodLabel: string;
+  rows: ReportRow[];
+  totals: { voucherCount: number; kasbon: string; net: string };
+}
+
+const PERIODS: { key: Period; label: string }[] = [
+  { key: "harian", label: "Harian" },
+  { key: "mingguan", label: "Mingguan" },
+  { key: "bulanan", label: "Bulanan" },
+];
+
+const cols = "1.5fr 1fr .9fr 1.1fr 1fr 1.1fr";
+
+export default function LaporanPage() {
+  const [period, setPeriod] = useState<Period>("harian");
+  const [data, setData] = useState<Report | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/admin/report?period=${period}`)
+      .then((r) => r.json())
+      .then(setData);
+  }, [period]);
+
+  return (
+    <div>
+      <AdminPageHeader
+        title="Rekap Pendapatan"
+        subtitle="Harian, mingguan, bulanan — dapat diunduh sebagai CSV — khusus Peran Tera (VCR); karyawan bergaji ada di Data Karyawan & Rincian Totalan"
+      />
+
+      <div className="pt-5.5">
+        <div className="flex flex-wrap gap-2.5 items-center justify-between mb-4">
+          <div className="flex gap-1.5 p-[5px] bg-ar-surface2 rounded-[11px]">
+            {PERIODS.map((p) => (
+              <button
+                key={p.key}
+                onClick={() => setPeriod(p.key)}
+                className={`py-2.5 px-4 rounded-lg text-[11px] font-semibold tracking-[0.14em] uppercase cursor-pointer ${
+                  period === p.key ? "bg-ar-goldfill text-ar-gold2 shadow-[inset_0_0_0_1px_var(--ar-goldline)]" : "text-ar-dim"
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+          <a
+            href={`/api/admin/report/export?period=${period}`}
+            className="py-3 px-5 ar-grad rounded-[10px] text-ar-ongold text-[11px] font-bold tracking-[0.14em] uppercase"
+          >
+            Unduh CSV · {data?.periodLabel ?? ""}
+          </a>
+        </div>
+
+        <div className="bg-ar-surface border border-ar-line rounded-2xl overflow-x-auto">
+          <div className="min-w-[640px]">
+          <div className="grid gap-3 py-3.5 px-4.5 bg-ar-surface2 text-[10px] tracking-[0.14em] uppercase text-ar-dim" style={{ gridTemplateColumns: cols }}>
+            <span>Karyawan/Tera</span>
+            <span>Grade</span>
+            <span>Total Voucher</span>
+            <span>Pendapatan/Voucher</span>
+            <span>Total Kasbon</span>
+            <span>Sisa Gaji</span>
+          </div>
+          {data?.rows.map((r, i) => (
+            <div key={i} className="grid gap-3 py-3.5 px-4.5 border-t border-ar-line text-[12.5px] items-center" style={{ gridTemplateColumns: cols }}>
+              <span>{r.name}</span>
+              <span className={r.level === "PLATINUM" || r.level === "MODEL" ? "text-ar-gold2" : "text-ar-dim"}>
+                {VOUCHER_LABEL[r.level as EmployeeLevel]}
+              </span>
+              <span>{r.voucherCount} vcr</span>
+              <span>{r.rateLabel}</span>
+              <span className="text-ar-red">{r.kasbon}</span>
+              <span className="font-display text-[18px] text-ar-gold2">{r.net}</span>
+            </div>
+          ))}
+          {data && (
+            <div
+              className="grid gap-3 py-4 px-4.5 border-t border-ar-goldline bg-ar-goldfill text-[12.5px] items-center"
+              style={{ gridTemplateColumns: cols }}
+            >
+              <span className="tracking-[0.14em] uppercase text-[10.5px] text-ar-gold">Total {data.periodLabel}</span>
+              <span />
+              <span>{data.totals.voucherCount} vcr</span>
+              <span />
+              <span className="text-ar-red">{data.totals.kasbon}</span>
+              <span className="font-display text-xl text-ar-gold2">{data.totals.net}</span>
+            </div>
+          )}
+          </div>
+        </div>
+        <div className="mt-3.5 py-4 px-4.5 bg-ar-surface2 border border-ar-line rounded-2xl text-[11.5px] leading-[1.75] text-ar-dim">
+          File CSV terbuka di Excel dan Google Sheets. Isi kolom: tanggal, kode karyawan, nama, level, kategori voucher, nilai,
+          klien, status pencairan.
+        </div>
+      </div>
+    </div>
+  );
+}

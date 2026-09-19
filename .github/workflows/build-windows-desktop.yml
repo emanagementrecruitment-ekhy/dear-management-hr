@@ -1,0 +1,80 @@
+name: Build Desktop App (Windows installer)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "desktop/**"
+      - ".github/workflows/build-windows-desktop.yml"
+
+jobs:
+  build:
+    # Runs on a real Windows machine — no wine, no cross-compile risk. The
+    # local build-desktop.sh (see desktop/) is reused as-is via Git Bash,
+    # which ships on GitHub's windows-latest runners.
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install root app dependencies
+        run: npm ci
+
+      - name: Build app + template database + Windows installer
+        shell: bash
+        run: bash desktop/build-desktop.sh
+
+      - name: Resolve product name from desktop/package.json
+        # Every white-label clone already renames build.productName in
+        # desktop/package.json for its own branding — reading it here means
+        # this workflow never needs a manual edit (and can't be forgotten)
+        # when the app is cloned for a new client.
+        id: product
+        shell: bash
+        run: |
+          name=$(node -p "require('./desktop/package.json').build.productName")
+          slug=$(echo "$name" | tr ' ' '-')
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "slug=$slug" >> "$GITHUB_OUTPUT"
+
+      - name: Upload installer as a workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-installer-${{ github.run_number }}
+          path: desktop/dist/*.exe
+          retention-days: 90
+
+      - name: Publish as a GitHub Release (stable download link)
+        # Release assets don't touch git history the way a committed binary
+        # would (see build-android.yml, which commits the much smaller APK
+        # straight into public/downloads/) — this installer is far too big
+        # for that (GitHub blocks pushes with files over 100MB), and Release
+        # assets give a stable, ever-current URL on their own:
+        # https://github.com/<owner>/<repo>/releases/latest/download/<slug>-Setup.exe
+        #
+        # Each build gets its OWN tag (desktop-<run number>) instead of
+        # reusing/deleting "desktop-latest" — repos with GitHub's "immutable
+        # releases" repo rule enabled permanently block re-creating a release
+        # under a tag name that was ever published before, even after
+        # deleting it (HTTP 422 "tag_name was used by an immutable release").
+        # --latest still moves the stable /releases/latest/ alias to this
+        # run's release regardless of its tag name, so the download link on
+        # the login page (which points at /releases/latest/download/<file>)
+        # never needs to change.
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          installer=$(ls desktop/dist/*.exe)
+          exeName="${{ steps.product.outputs.slug }}-Setup.exe"
+          cp "$installer" "$exeName"
+          gh release create "desktop-${{ github.run_number }}" "$exeName" \
+            --title "${{ steps.product.outputs.name }} — installer terbaru" \
+            --notes "Dibuat otomatis dari commit ${{ github.sha }} (build #${{ github.run_number }}). Unduh dan jalankan langsung di komputer/laptop Windows kantor." \
+            --latest

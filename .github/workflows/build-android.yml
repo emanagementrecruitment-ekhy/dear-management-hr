@@ -1,0 +1,140 @@
+name: Build Android App (TWA)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "android/**"
+      - ".github/workflows/build-android.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        # android-actions/setup-android@v3 started failing outright (within
+        # seconds, no useful log) once GitHub force-migrated this action to
+        # the Node 24 runner — GitHub's own ubuntu-latest image already
+        # ships a full Android SDK, so we point at that instead of relying
+        # on the third-party action at all.
+        run: |
+          : "${ANDROID_HOME:=/usr/local/lib/android/sdk}"
+          : "${ANDROID_SDK_ROOT:=$ANDROID_HOME}"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          echo "Resolved ANDROID_HOME=$ANDROID_HOME"
+          ls "$ANDROID_HOME/cmdline-tools/latest/bin"
+
+      - name: Install required SDK packages
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.1.0"
+
+      - name: Bridge Android SDK layout for Bubblewrap compatibility
+        # Bubblewrap's SDK path check (and its own sdkmanager calls) look for a
+        # legacy `$ANDROID_HOME/tools/bin` folder, which modern cmdline-tools-only
+        # SDK installs (like the one above) no longer have — only `cmdline-tools/latest/bin`.
+        run: ln -s "$ANDROID_HOME/cmdline-tools/latest" "$ANDROID_HOME/tools"
+
+      - name: Install Bubblewrap CLI
+        run: npm install -g @bubblewrap/cli
+
+      - name: Restore signing keystore
+        working-directory: android
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android.keystore
+
+      - name: Point Bubblewrap at the JDK/Android SDK installed above
+        # `bubblewrap updateConfig` always goes through Bubblewrap's interactive
+        # first-run wizard first (it re-checks its own ~/.bubblewrap/config.json
+        # on every invocation, prompt included, regardless of the subcommand or
+        # flags passed) — which hangs forever with no TTY in CI. Writing the
+        # config file directly skips that wizard entirely.
+        run: |
+          mkdir -p "$HOME/.bubblewrap"
+          printf '{"jdkPath":"%s","androidSdkPath":"%s"}' "$JAVA_HOME" "$ANDROID_HOME" > "$HOME/.bubblewrap/config.json"
+          cat "$HOME/.bubblewrap/config.json"
+
+      - name: Generate the Android project from twa-manifest.json
+        # Every CI run starts from a clean checkout, so the Gradle project
+        # (gradlew, app/, etc.) never exists yet — it must be generated fresh
+        # every time via `update`, not left for `build` to do implicitly.
+        # `build` only regenerates the project when it thinks the manifest
+        # changed (comparing against manifest-checksum.txt); `update` also
+        # writes that checksum file itself, so the immediately-following
+        # `build` step correctly sees the project as already up to date and
+        # skips straight to compiling instead of hitting its own interactive
+        # "no checksum file found, regenerate?" prompt (which hangs with no
+        # TTY in CI). --skipVersionUpgrade avoids the only other prompt in
+        # this command (bumping appVersionCode/appVersionName).
+        working-directory: android
+        # Bubblewrap's own CLI swallows internal errors (a failed icon
+        # download, a failed signing step, etc.) and still exits 0, so
+        # GitHub Actions reports the step as green even when it didn't do
+        # what it was supposed to — confirmed by build-output.log/
+        # update-output.log showing ERROR lines on runs this workflow still
+        # marked "success". Retry a few times (the icon fetch hits the
+        # Railway app directly and can hit a transient 502 on a cold start),
+        # then explicitly verify the expected output file exists and fail
+        # the step for real if it doesn't.
+        run: |
+          for attempt in 1 2 3; do
+            bubblewrap update --skipVersionUpgrade 2>&1 | tee update-output.log
+            if [ -f manifest-checksum.txt ] && [ -f gradlew ]; then
+              break
+            fi
+            echo "Attempt $attempt did not produce a valid project, retrying in 15s..."
+            sleep 15
+          done
+          test -f manifest-checksum.txt && test -f gradlew
+
+      - name: Build signed App Bundle + APK
+        working-directory: android
+        env:
+          BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          bubblewrap build --skipPwaValidation 2>&1 | tee build-output.log
+          test -f app-release-bundle.aab
+          test -f app-release-signed.apk
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: arcorp-android-${{ github.run_number }}
+          path: |
+            android/app-release-bundle.aab
+            android/app-release-signed.apk
+          retention-days: 90
+
+      - name: Publish APK for in-app download
+        # Copies the freshly built APK into the Next.js public/ folder and
+        # commits it back to main under a fixed filename, so the live site
+        # always serves the latest build at a stable URL — no manual
+        # artifact download needed. This path is outside android/**, so it
+        # doesn't retrigger this workflow.
+        run: |
+          mkdir -p public/downloads
+          cp android/app-release-signed.apk public/downloads/arcorp.apk
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/downloads/arcorp.apk
+          if git diff --cached --quiet; then
+            echo "APK unchanged, nothing to publish."
+          else
+            git commit -m "Publish APK terbaru ke /downloads (auto dari CI build #${{ github.run_number }})"
+            git pull --rebase origin main
+            git push
+          fi

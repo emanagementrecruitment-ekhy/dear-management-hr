@@ -1,0 +1,40 @@
+{
+  "packageId": "id.dearmanagement.app",
+  "host": "dear-management-hr-production.up.railway.app",
+  "name": "DEAR Management",
+  "launcherName": "DEAR Management",
+  "display": "standalone",
+  "themeColor": "#08080a",
+  "themeColorDark": "#08080a",
+  "navigationColor": "#08080a",
+  "navigationColorDark": "#08080a",
+  "navigationDividerColor": "#000000",
+  "navigationDividerColorDark": "#000000",
+  "backgroundColor": "#08080a",
+  "enableNotifications": false,
+  "startUrl": "/",
+  "iconUrl": "https://dear-management-hr-production.up.railway.app/icons/icon-512.png",
+  "maskableIconUrl": "https://dear-management-hr-production.up.railway.app/icons/icon-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "dearmanagement"
+  },
+  "appVersionCode": 1,
+  "appVersion": "1.0.0",
+  "shortcuts": [],
+  "generatorApp": "manual",
+  "webManifestUrl": "https://dear-management-hr-production.up.railway.app/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "minSdkVersion": 21,
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": []
+}
