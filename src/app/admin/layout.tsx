@@ -11,14 +11,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const isSupervisor = session.accessRole === "SUPERVISOR";
   if (!OFFICE_ROLES.includes(session.accessRole as AccessRole) && !isSupervisor) redirect("/app");
 
+  // CONSULTANT is the vendor's own reserved support tier — shown identically
+  // to "Owner" here so it never surfaces as a distinct role a client would
+  // have to explain (not every client engagement has a Consultant).
   const roleLabel =
-    session.accessRole === "OWNER"
+    session.accessRole === "OWNER" || session.accessRole === "CONSULTANT"
       ? "Owner DEAR Management"
-      : session.accessRole === "CONSULTANT"
-        ? "Consultant DEAR Management"
-        : isSupervisor
-          ? "Kepala Mess DEAR Management"
-          : "Admin Pusat DEAR Management";
+      : isSupervisor
+        ? "Kepala Mess DEAR Management"
+        : "Admin Pusat DEAR Management";
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
