@@ -339,7 +339,7 @@ export default function LoginPage() {
 
         <div className="mt-5 flex flex-wrap gap-2.5 justify-center">
           <a
-            href="/downloads/dear-management.apk"
+            href="/downloads/arcorp.apk"
             download
             className="text-[10px] tracking-[0.14em] uppercase text-ar-gold border border-ar-goldline rounded-full px-4 py-2 hover:bg-ar-goldfill transition"
           >

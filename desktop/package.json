@@ -1,6 +1,6 @@
 {
   "name": "dear-management-desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "DEAR Management Desktop — pembungkus aplikasi DEAR Management untuk komputer/laptop kantor (online ke Railway, otomatis cadangan lokal saat internet mati).",
   "author": "DEAR Management",
