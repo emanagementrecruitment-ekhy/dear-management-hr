@@ -68,13 +68,24 @@ jobs:
             echo "::error::ANDROID_KEYSTORE_BASE64 secret is empty or not set."
             exit 1
           fi
-          echo "Secret length (base64 chars): ${#KEYSTORE_BASE64}"
-          printf '%s' "$KEYSTORE_BASE64" | base64 -d > android.keystore
-          if [ ! -s android.keystore ]; then
-            echo "::error::Decoded android.keystore is empty — the secret is not valid base64."
+          echo "::notice::Secret length before cleanup: ${#KEYSTORE_BASE64} chars"
+          # Strip all whitespace (spaces/tabs/CR/LF) before decoding — a
+          # trailing newline or stray whitespace character surviving a
+          # copy/paste round trip is invisible to a human but can make GNU
+          # base64 -d reject input that .NET's own decoder (used to verify
+          # the value locally before pasting it here) accepts without
+          # complaint, since it silently ignores such whitespace itself.
+          CLEANED=$(printf '%s' "$KEYSTORE_BASE64" | tr -d '[:space:]')
+          echo "::notice::Secret length after cleanup: ${#CLEANED} chars"
+          if ! printf '%s' "$CLEANED" | base64 -d > android.keystore; then
+            echo "::error::base64 -d rejected the cleaned secret — it is not valid base64 even after stripping whitespace."
             exit 1
           fi
-          echo "Decoded keystore size: $(stat -c%s android.keystore) bytes"
+          if [ ! -s android.keystore ]; then
+            echo "::error::Decoded android.keystore is empty."
+            exit 1
+          fi
+          echo "::notice::Decoded keystore size: $(stat -c%s android.keystore) bytes"
 
       - name: Point Bubblewrap at the JDK/Android SDK installed above
         # `bubblewrap updateConfig` always goes through Bubblewrap's interactive
