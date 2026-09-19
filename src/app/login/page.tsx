@@ -166,7 +166,7 @@ export default function LoginPage() {
               <span className="bm-shimmer-rosegold">DEAR MANAGEMENT</span>
             </div>
             <div className="text-[10.5px] tracking-[0.24em] text-ar-dim mt-1.5 uppercase">
-              Operations Portal Check Your Slip Pay
+              Absensi • Voucher • Kasbon Karyawan
             </div>
           </div>
         </div>
