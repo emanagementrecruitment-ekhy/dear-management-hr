@@ -80,12 +80,18 @@ export async function sendOtpEmail(to: string, code: string) {
   }
   const transport = getMailer();
   if (!transport) throw new Error("SMTP is not configured");
-  await transport.sendMail({
+  const info = await transport.sendMail({
     from: process.env.SMTP_FROM || process.env.SMTP_USER,
     to,
     subject: "Kode verifikasi DEAR Management",
     text: `Kode verifikasi Anda: ${code} (berlaku 5 menit). Jangan bagikan kode ini kepada siapa pun.`,
   });
+  // Diagnostic only (no code/PII beyond the recipient, which is already
+  // visible in the DB) — nodemailer resolving sendMail() only means the SMTP
+  // server accepted the message, not that it reached the inbox, so the
+  // server's own response/messageId is the only signal we have of what
+  // actually happened on Gmail's end.
+  console.log(`[otp] SMTP accepted message for ${to}: messageId=${info.messageId} response="${info.response}"`);
 }
 
 export function smsProviderConfigured() {
