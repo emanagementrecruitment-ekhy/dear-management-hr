@@ -74,24 +74,33 @@ export function emailProviderConfigured() {
 }
 
 export async function sendOtpEmail(to: string, code: string) {
+  // SMTP takes priority over Brevo: BREVO_API_KEY here can be a leftover
+  // reference to another deployment's key (Railway's variable editor won't
+  // actually clear a reference by setting it to an empty string — it just
+  // keeps resolving the referenced value) — SMTP_HOST/USER/PASS are this
+  // app's own, deliberately configured credentials, so they win whenever
+  // both are present.
+  const transport = getMailer();
+  if (transport) {
+    const info = await transport.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to,
+      subject: "Kode verifikasi DEAR Management",
+      text: `Kode verifikasi Anda: ${code} (berlaku 5 menit). Jangan bagikan kode ini kepada siapa pun.`,
+    });
+    // Diagnostic only (no code/PII beyond the recipient, which is already
+    // visible in the DB) — nodemailer resolving sendMail() only means the
+    // SMTP server accepted the message, not that it reached the inbox, so
+    // the server's own response/messageId is the only signal we have of
+    // what actually happened on Gmail's end.
+    console.log(`[otp] SMTP accepted message for ${to}: messageId=${info.messageId} response="${info.response}"`);
+    return;
+  }
   if (process.env.BREVO_API_KEY) {
     await sendOtpEmailViaBrevoApi(to, code);
     return;
   }
-  const transport = getMailer();
-  if (!transport) throw new Error("SMTP is not configured");
-  const info = await transport.sendMail({
-    from: process.env.SMTP_FROM || process.env.SMTP_USER,
-    to,
-    subject: "Kode verifikasi DEAR Management",
-    text: `Kode verifikasi Anda: ${code} (berlaku 5 menit). Jangan bagikan kode ini kepada siapa pun.`,
-  });
-  // Diagnostic only (no code/PII beyond the recipient, which is already
-  // visible in the DB) — nodemailer resolving sendMail() only means the SMTP
-  // server accepted the message, not that it reached the inbox, so the
-  // server's own response/messageId is the only signal we have of what
-  // actually happened on Gmail's end.
-  console.log(`[otp] SMTP accepted message for ${to}: messageId=${info.messageId} response="${info.response}"`);
+  throw new Error("Neither SMTP nor Brevo is configured");
 }
 
 export function smsProviderConfigured() {
@@ -155,8 +164,19 @@ export async function sendOtpWhatsapp(toPhoneDigits: string, code: string) {
   }
 }
 
-/** Emails a Slip Pay PDF to the employee's registered address, over whichever of Brevo/SMTP is configured — same channel as sendOtpEmail above. */
+/** Emails a Slip Pay PDF to the employee's registered address, over whichever of SMTP/Brevo is configured — same channel and SMTP-first priority as sendOtpEmail above. */
 export async function sendPayslipEmail(to: string, subject: string, text: string, pdf: Buffer, filename: string) {
+  const transport = getMailer();
+  if (transport) {
+    await transport.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to,
+      subject,
+      text,
+      attachments: [{ filename, content: pdf }],
+    });
+    return;
+  }
   if (process.env.BREVO_API_KEY) {
     const senderRaw = process.env.SMTP_FROM || process.env.SMTP_USER;
     if (!senderRaw) throw new Error("No sender email configured for Brevo API");
@@ -178,15 +198,7 @@ export async function sendPayslipEmail(to: string, subject: string, text: string
     }
     return;
   }
-  const transport = getMailer();
-  if (!transport) throw new Error("SMTP is not configured");
-  await transport.sendMail({
-    from: process.env.SMTP_FROM || process.env.SMTP_USER,
-    to,
-    subject,
-    text,
-    attachments: [{ filename, content: pdf }],
-  });
+  throw new Error("Neither SMTP nor Brevo is configured");
 }
 
 /** Sends a Slip Pay PDF as a WhatsApp document via Fonnte — same gateway/token as sendOtpWhatsapp above. */
