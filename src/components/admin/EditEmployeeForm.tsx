@@ -45,7 +45,7 @@ export default function EditEmployeeForm({
     name: employee.name,
     email: employee.email,
     phone: employee.phone,
-    level: employee.level ?? "LEVEL_1",
+    level: employee.level ?? "SILVER",
     role: employee.role,
     place: employee.place,
     supervisorId: employee.supervisorId,

@@ -18,9 +18,7 @@ export const NOTIFY_ROLES: AccessRole[] = ["OWNER", "CONSULTANT", "ADMIN_PUSAT",
 // Ordered lowest to highest pendapatan/VCR — drives dropdown display order.
 // MANUAL sits last: it has no fixed rate (see VOUCHER_AMOUNT and
 // employeeRate() below — its real rate lives on Employee.customRate).
-// Placeholder tiers/rates for a fresh deployment — replace with DEAR
-// Management's real level names and rates once known.
-export const EMPLOYEE_LEVELS = ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6", "LEVEL_7", "LEVEL_8", "MANUAL"] as const;
+export const EMPLOYEE_LEVELS = ["CLASSIC_D", "FL", "SILVER", "GOLD", "LB", "PLATINUM", "LV", "MODEL", "MANUAL"] as const;
 export type EmployeeLevel = (typeof EMPLOYEE_LEVELS)[number];
 
 export const VOUCHER_STATUSES = ["MENUNGGU_VALIDASI", "TERVALIDASI", "DICAIRKAN"] as const;
@@ -32,26 +30,26 @@ export type KasbonStatus = (typeof KASBON_STATUSES)[number];
 // MANUAL's 0 here is a placeholder — always resolve an employee's actual
 // rate through employeeRate() below, which substitutes their customRate.
 export const VOUCHER_AMOUNT: Record<EmployeeLevel, number> = {
-  LEVEL_1: 100_000,
-  LEVEL_2: 150_000,
-  LEVEL_3: 200_000,
-  LEVEL_4: 250_000,
-  LEVEL_5: 300_000,
-  LEVEL_6: 400_000,
-  LEVEL_7: 500_000,
-  LEVEL_8: 600_000,
+  CLASSIC_D: 95_000,
+  FL: 105_000,
+  SILVER: 150_000,
+  GOLD: 250_000,
+  LB: 300_000,
+  PLATINUM: 400_000,
+  LV: 500_000,
+  MODEL: 700_000,
   MANUAL: 0,
 };
 
 export const VOUCHER_LABEL: Record<EmployeeLevel, string> = {
-  LEVEL_1: "Level 1",
-  LEVEL_2: "Level 2",
-  LEVEL_3: "Level 3",
-  LEVEL_4: "Level 4",
-  LEVEL_5: "Level 5",
-  LEVEL_6: "Level 6",
-  LEVEL_7: "Level 7",
-  LEVEL_8: "Level 8",
+  CLASSIC_D: "ST",
+  FL: "FL",
+  SILVER: "SILVER",
+  GOLD: "GOLD",
+  LB: "LB",
+  PLATINUM: "PLATINUM / JASMINE",
+  LV: "LV",
+  MODEL: "MODEL",
   MANUAL: "MANUAL INPUT",
 };
 
@@ -90,9 +88,24 @@ export const OTP_MAX_ATTEMPTS = 5;
 // coordinates going forward. These venues don't have known coordinates yet,
 // so they default to HQ (0 km, dalam radius) until a real check-in happens —
 // update the lat/lng here once each venue's actual address is known.
-// Placeholder for a fresh deployment — add DEAR Management's real venues here
-// (at least one entry must stay, see EmployeeFields.tsx's default selection).
-export const FIELD_CITIES = [{ place: "KANTOR PUSAT", lat: HQ.lat, lng: HQ.lng }] as const;
+export const FIELD_CITIES = [
+  { place: "CLASSIC BUNGKER", lat: HQ.lat, lng: HQ.lng },
+  { place: "CLASSIC T2", lat: HQ.lat, lng: HQ.lng },
+  { place: "CLASSIC T5", lat: HQ.lat, lng: HQ.lng },
+  { place: "COLLO (1001)", lat: HQ.lat, lng: HQ.lng },
+  { place: "EMVO", lat: HQ.lat, lng: HQ.lng },
+  { place: "HRV", lat: HQ.lat, lng: HQ.lng },
+  { place: "LA", lat: HQ.lat, lng: HQ.lng },
+  { place: "MA", lat: HQ.lat, lng: HQ.lng },
+  { place: "MALIO", lat: HQ.lat, lng: HQ.lng },
+  { place: "MEDIKA", lat: HQ.lat, lng: HQ.lng },
+  { place: "MTR", lat: HQ.lat, lng: HQ.lng },
+  { place: "MTR2", lat: HQ.lat, lng: HQ.lng },
+  { place: "OFFICE", lat: HQ.lat, lng: HQ.lng },
+  { place: "ROYAL", lat: HQ.lat, lng: HQ.lng },
+  { place: "SA", lat: HQ.lat, lng: HQ.lng },
+  { place: "V-CLUB", lat: HQ.lat, lng: HQ.lng },
+] as const;
 
 export const FIELD_ROLES = ["Admin", "Kepala Mess", "Koordinator", "Recruitment", "Salon", "Staff", "Tera", "Owner"] as const;
 

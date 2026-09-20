@@ -224,7 +224,7 @@ export default function EmployeeListPage({
                     </span>
                   )}
                 </span>
-                <span className={e.level === "LEVEL_7" || e.level === "LEVEL_8" ? "text-ar-gold2" : "text-ar-dim"}>
+                <span className={e.level === "PLATINUM" || e.level === "MODEL" ? "text-ar-gold2" : "text-ar-dim"}>
                   {usesVcr(e.role) ? VOUCHER_LABEL[e.level as EmployeeLevel] : "GAJI"}
                 </span>
                 <span className="text-[11px] text-ar-dim leading-[1.6]">

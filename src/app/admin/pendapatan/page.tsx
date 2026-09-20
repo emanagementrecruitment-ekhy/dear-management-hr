@@ -39,10 +39,10 @@ export default function PendapatanPage() {
   const [employees, setEmployees] = useState<EmployeeOption[]>([]);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [employeeId, setEmployeeId] = useState("");
-  const [category, setCategory] = useState<EmployeeLevel>("LEVEL_1");
+  const [category, setCategory] = useState<EmployeeLevel>("SILVER");
   const [location, setLocation] = useState("");
   const [occurredAt, setOccurredAt] = useState(today());
-  const [amount, setAmount] = useState(String(VOUCHER_AMOUNT.LEVEL_1));
+  const [amount, setAmount] = useState(String(VOUCHER_AMOUNT.SILVER));
   const [amountTouched, setAmountTouched] = useState(false);
   const [qty, setQty] = useState("1");
   const [busy, setBusy] = useState(false);

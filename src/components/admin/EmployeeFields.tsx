@@ -33,7 +33,7 @@ export function emptyEmployeeFields(): EmployeeFieldsValue {
     name: "",
     email: "",
     phone: "",
-    level: "LEVEL_1",
+    level: "SILVER",
     role: FIELD_ROLES[0],
     place: FIELD_CITIES[0].place,
     supervisorId: "",

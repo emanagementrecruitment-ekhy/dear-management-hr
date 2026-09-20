@@ -82,7 +82,7 @@ export default function LaporanPage() {
           {data?.rows.map((r, i) => (
             <div key={i} className="grid gap-3 py-3.5 px-4.5 border-t border-ar-line text-[12.5px] items-center" style={{ gridTemplateColumns: cols }}>
               <span>{r.name}</span>
-              <span className={r.level === "LEVEL_7" || r.level === "LEVEL_8" ? "text-ar-gold2" : "text-ar-dim"}>
+              <span className={r.level === "PLATINUM" || r.level === "MODEL" ? "text-ar-gold2" : "text-ar-dim"}>
                 {VOUCHER_LABEL[r.level as EmployeeLevel]}
               </span>
               <span>{r.voucherCount} vcr</span>
