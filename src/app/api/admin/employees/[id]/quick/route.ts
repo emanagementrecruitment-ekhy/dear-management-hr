@@ -13,7 +13,7 @@ import { EMPLOYEE_LEVELS, FIELD_CITIES, usesVcr, type EmployeeLevel } from "@/li
  */
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireSession(["OWNER", "CONSULTANT"]);
+    await requireSession(["OWNER", "CONSULTANT", "MANAGER"]);
     const { id } = await params;
     const body = await req.json().catch(() => null);
 

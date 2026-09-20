@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma";
  */
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireSession(["OWNER", "CONSULTANT"]);
+    await requireSession(["OWNER", "CONSULTANT", "MANAGER"]);
     const { id } = await params;
 
     const row = await prisma.resignPayslip.findUnique({ where: { id } });

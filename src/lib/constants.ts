@@ -1,6 +1,6 @@
 // Enum-like string values for SQLite columns (see prisma/schema.prisma header comment).
 
-export const ACCESS_ROLES = ["KARYAWAN", "OWNER", "CONSULTANT", "ADMIN_PUSAT", "SUPERVISOR"] as const;
+export const ACCESS_ROLES = ["KARYAWAN", "OWNER", "CONSULTANT", "ADMIN_PUSAT", "SUPERVISOR", "MANAGER"] as const;
 export type AccessRole = (typeof ACCESS_ROLES)[number];
 
 // A resigned employee/Tera can't log in and drops out of the active Data
@@ -14,13 +14,18 @@ export type EmployeeStatus = (typeof EMPLOYEE_STATUSES)[number];
 // SUPERVISOR (Kepala Mess) is deliberately excluded — it's a narrower,
 // view-only role scoped to Laporan Lapangan only (see requireSession calls
 // in src/app/api/admin/lapor/route.ts and src/app/admin/layout.tsx).
-export const OFFICE_ROLES: AccessRole[] = ["OWNER", "CONSULTANT", "ADMIN_PUSAT"];
+// MANAGER carries the same office access as OWNER everywhere in the app —
+// the one deliberate exception is the Owner Identity feature itself (see
+// /api/admin/owner-identity, /api/admin/owner-identity/logo, and
+// /dev/nav-layout), which stays OWNER/CONSULTANT/ADMIN_PUSAT-only so a
+// Manager can never view or replace the real Owner's identity.
+export const OFFICE_ROLES: AccessRole[] = ["OWNER", "CONSULTANT", "ADMIN_PUSAT", "MANAGER"];
 
 // Every role that should hear about day-to-day activity (new chat/report,
 // voucher/pendapatan entries, a Tera login) — OFFICE_ROLES plus SUPERVISOR
 // (Kepala Mess), who's otherwise scoped to Laporan Lapangan only. See
 // src/lib/notify.ts.
-export const NOTIFY_ROLES: AccessRole[] = ["OWNER", "CONSULTANT", "ADMIN_PUSAT", "SUPERVISOR"];
+export const NOTIFY_ROLES: AccessRole[] = ["OWNER", "CONSULTANT", "ADMIN_PUSAT", "SUPERVISOR", "MANAGER"];
 
 // Ordered lowest to highest pendapatan/VCR — drives dropdown display order.
 // MANUAL sits last: it has no fixed rate (see VOUCHER_AMOUNT and
@@ -114,7 +119,7 @@ export const FIELD_CITIES = [
   { place: "V-CLUB", lat: HQ.lat, lng: HQ.lng },
 ] as const;
 
-export const FIELD_ROLES = ["Admin", "Kepala Mess", "Koordinator", "Recruitment", "Salon", "Staff", "Tera", "Owner"] as const;
+export const FIELD_ROLES = ["Admin", "Kepala Mess", "Manager", "Koordinator", "Recruitment", "Salon", "Staff", "Tera", "Owner"] as const;
 
 // Only Peran "Tera" earns via Pendapatan/VCR (per-voucher commission) — every
 // other Peran is salaried (Gaji, a fixed monthly nominal on Employee.salary).
@@ -176,11 +181,13 @@ export const PAYSLIP_COST_CATEGORIES = [
 // hand the seat to someone else unilaterally.
 // Owner used to be appointed here too (pick an existing Data Karyawan row).
 // It's been replaced by a dedicated one-time provisioning flow — see
-// OWNER_ACCOUNT_CODE below and /dev/nav-layout — so Jabatan Kantor now only
-// ever lists the two genuinely re-appointable office seats.
+// OWNER_ACCOUNT_CODE below and /dev/nav-layout — so Jabatan Kantor lists the
+// re-appointable office seats: Admin, Kepala Mess, and Manager (equal to
+// Owner in every permission except the Owner Identity feature itself).
 export const APPOINTABLE_ROLES: { peran: string; accessRole: AccessRole; label: string; appointerRoles?: AccessRole[] }[] = [
   { peran: "Admin", accessRole: "ADMIN_PUSAT", label: "Admin" },
   { peran: "Kepala Mess", accessRole: "SUPERVISOR", label: "Kepala Mess" },
+  { peran: "Manager", accessRole: "MANAGER", label: "Manager" },
 ];
 
 // The single Owner account's reserved employee code — mirrors HQ-CONSULT's

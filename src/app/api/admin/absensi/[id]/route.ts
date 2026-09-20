@@ -5,7 +5,7 @@ import { requireSession, apiError } from "@/lib/api-auth";
 /** Only Owner/Consultant may erase a self-check-in mark — narrower than the usual OFFICE_ROLES (Admin Pusat excluded), per explicit requirement. */
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireSession(["OWNER", "CONSULTANT"]);
+    await requireSession(["OWNER", "CONSULTANT", "MANAGER"]);
     const { id } = await params;
 
     const existing = await prisma.attendance.findUnique({ where: { id } });

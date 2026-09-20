@@ -7,7 +7,7 @@ import { notifyOffice } from "@/lib/notify";
 import { fmtRp } from "@/lib/format";
 import { getEmployeeLimit } from "@/lib/license";
 
-const MANAGERS = ["OWNER", "CONSULTANT", "ADMIN_PUSAT"] as const;
+const MANAGERS = ["OWNER", "CONSULTANT", "ADMIN_PUSAT", "MANAGER"] as const;
 // The xlsx parser has known ReDoS/resource-exhaustion issues on maliciously
 // crafted files (GHSA-5pgg-2g8v-p4x9) with no upstream npm fix — this cap
 // bounds how much a single import can make the parser chew on, on top of
