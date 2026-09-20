@@ -74,33 +74,24 @@ export function emailProviderConfigured() {
 }
 
 export async function sendOtpEmail(to: string, code: string) {
-  // SMTP takes priority over Brevo: BREVO_API_KEY here can be a leftover
-  // reference to another deployment's key (Railway's variable editor won't
-  // actually clear a reference by setting it to an empty string — it just
-  // keeps resolving the referenced value) — SMTP_HOST/USER/PASS are this
-  // app's own, deliberately configured credentials, so they win whenever
-  // both are present.
-  const transport = getMailer();
-  if (transport) {
-    const info = await transport.sendMail({
-      from: process.env.SMTP_FROM || process.env.SMTP_USER,
-      to,
-      subject: "Kode verifikasi DEAR Management",
-      text: `Kode verifikasi Anda: ${code} (berlaku 5 menit). Jangan bagikan kode ini kepada siapa pun.`,
-    });
-    // Diagnostic only (no code/PII beyond the recipient, which is already
-    // visible in the DB) — nodemailer resolving sendMail() only means the
-    // SMTP server accepted the message, not that it reached the inbox, so
-    // the server's own response/messageId is the only signal we have of
-    // what actually happened on Gmail's end.
-    console.log(`[otp] SMTP accepted message for ${to}: messageId=${info.messageId} response="${info.response}"`);
-    return;
-  }
+  // Brevo (HTTPS API) takes priority over raw SMTP: Railway blocks outbound
+  // SMTP ports (587/465) entirely at the network level for this service —
+  // confirmed by repeated ETIMEDOUT/ENETUNREACH regardless of host or IP
+  // family — so nodemailer can never succeed here no matter how it's
+  // configured. Brevo's plain HTTPS call sidesteps that block completely.
   if (process.env.BREVO_API_KEY) {
     await sendOtpEmailViaBrevoApi(to, code);
     return;
   }
-  throw new Error("Neither SMTP nor Brevo is configured");
+  const transport = getMailer();
+  if (!transport) throw new Error("Neither Brevo nor SMTP is configured");
+  const info = await transport.sendMail({
+    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    to,
+    subject: "Kode verifikasi DEAR Management",
+    text: `Kode verifikasi Anda: ${code} (berlaku 5 menit). Jangan bagikan kode ini kepada siapa pun.`,
+  });
+  console.log(`[otp] SMTP accepted message for ${to}: messageId=${info.messageId} response="${info.response}"`);
 }
 
 export function smsProviderConfigured() {
