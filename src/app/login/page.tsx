@@ -346,7 +346,7 @@ export default function LoginPage() {
             ⬇ Unduh Aplikasi Android (APK)
           </a>
           <a
-            href="https://github.com/emanagementrecruitment-ekhy/dear-management-hr/releases/latest/download/DEAR-Management-Desktop-Setup.exe"
+            href="/downloads/desktop"
             className="text-[10px] tracking-[0.14em] uppercase text-ar-gold border border-ar-goldline rounded-full px-4 py-2 hover:bg-ar-goldfill transition"
           >
             ⬇ Unduh DEAR Management Desktop (Windows)
