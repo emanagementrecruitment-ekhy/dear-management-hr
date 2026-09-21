@@ -354,6 +354,13 @@ model AppSetting {
   announcementUpdatedAt   DateTime?
   announcementUpdatedById String?
 
+  // Guards prisma/purge-tera-employees.ts (see start:railway) — a one-time
+  // admin-requested cleanup that removed every non-demo Tera employee from
+  // the live roster. Same one-shot pattern as demoCleanupAt: without this,
+  // the deleteMany would fire again on every restart and wipe out any new
+  // Tera an admin adds afterward.
+  teraPurgeAt DateTime?
+
   updatedAt DateTime @updatedAt
 }
 
