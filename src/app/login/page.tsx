@@ -6,7 +6,7 @@ import Image from "next/image";
 import DesktopStatusBar from "@/components/DesktopStatusBar";
 
 type Portal = "karyawan" | "pusat";
-type Step = "id" | "otp" | "gps";
+type Step = "id" | "otp" | "gps" | "loading";
 
 interface GpsStep {
   label: string;
@@ -94,7 +94,14 @@ export default function LoginPage() {
         return;
       }
       if (data.requiresAttendance) {
-        beginAttendance();
+        // Karyawan/Tera never see the GPS/absensi readout — it runs silently
+        // in the background and drops them straight on their own profile.
+        // Kepala Mess (SUPERVISOR) still sees the technical readout below.
+        if (data.accessRole === "KARYAWAN") {
+          silentAttendance();
+        } else {
+          beginAttendance();
+        }
       } else if (data.accessRole === "SUPERVISOR") {
         router.push("/admin/lapor-lapangan");
       } else {
@@ -104,6 +111,33 @@ export default function LoginPage() {
       setError("Tidak bisa terhubung ke server. Periksa koneksi internet dan coba lagi.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  /**
+   * Same GPS check-in as beginAttendance(), but never shows the technical
+   * readout (coordinates, distance, radius status) — karyawan/Tera just see
+   * a brief "menyiapkan aplikasi" spinner, then land on their own profile.
+   */
+  function silentAttendance() {
+    setStep("loading");
+    const finish = (lat?: number, lng?: number) =>
+      fetch("/api/attendance/checkin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lat, lng }),
+      })
+        .catch(() => {})
+        .finally(() => router.push("/app/profil"));
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (p) => finish(p.coords.latitude, p.coords.longitude),
+        () => finish(undefined, undefined),
+        { timeout: 6000 }
+      );
+    } else {
+      finish(undefined, undefined);
     }
   }
 
@@ -326,6 +360,13 @@ export default function LoginPage() {
               >
                 Masuk ke Aplikasi
               </button>
+            </div>
+          )}
+
+          {step === "loading" && (
+            <div className="py-8 flex flex-col items-center gap-3.5">
+              <span className="w-8 h-8 rounded-full border-2 border-ar-goldline border-t-transparent animate-spin" />
+              <span className="text-[11.5px] tracking-[0.08em] text-ar-dim">Menyiapkan aplikasi…</span>
             </div>
           )}
         </div>
