@@ -9,7 +9,13 @@ import { useState } from "react";
  * stale cached page: it clears any Cache Storage entries and forces a fresh
  * network reload of the current page.
  */
-export default function RefreshAppButton({ className }: { className?: string }) {
+export default function RefreshAppButton({
+  className,
+  label = "🔄 Segarkan Tampilan",
+}: {
+  className?: string;
+  label?: string;
+}) {
   const [busy, setBusy] = useState(false);
 
   async function refresh() {
@@ -29,7 +35,7 @@ export default function RefreshAppButton({ className }: { className?: string }) 
 
   return (
     <button onClick={refresh} disabled={busy} className={className}>
-      {busy ? "Menyegarkan…" : "🔄 Segarkan Tampilan"}
+      {busy ? "Menyegarkan…" : label}
     </button>
   );
 }
