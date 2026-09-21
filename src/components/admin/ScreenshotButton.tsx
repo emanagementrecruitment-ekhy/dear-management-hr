@@ -6,6 +6,14 @@ import { useRef, useState } from "react";
  * Lets the admin pick any rectangular area on screen (drag to resize/move it)
  * before capturing just that region as a PNG — "ukuran semau kita" per the
  * admin's own request, rather than a fixed full-page screenshot.
+ *
+ * Uses Pointer Events (not mouse events) so dragging works on touchscreens —
+ * this is opened from an Android phone as often as a desktop browser. The
+ * capture itself goes through modern-screenshot rather than html2canvas:
+ * html2canvas re-implements CSS parsing from scratch and throws on Tailwind
+ * v4's color-mix()-based opacity utilities used throughout this app (e.g.
+ * bg-ar-red/25), while modern-screenshot renders via an SVG <foreignObject>
+ * so the browser itself does the styling — it handles color-mix/oklch fine.
  */
 export default function ScreenshotButton() {
   const [selecting, setSelecting] = useState(false);
@@ -18,12 +26,13 @@ export default function ScreenshotButton() {
     setSelecting(true);
   }
 
-  function onMouseDown(e: React.MouseEvent) {
+  function onPointerDown(e: React.PointerEvent) {
+    e.currentTarget.setPointerCapture(e.pointerId);
     dragStart.current = { x: e.clientX, y: e.clientY };
     setRect({ x: e.clientX, y: e.clientY, w: 0, h: 0 });
   }
 
-  function onMouseMove(e: React.MouseEvent) {
+  function onPointerMove(e: React.PointerEvent) {
     if (!dragStart.current) return;
     const start = dragStart.current;
     setRect({
@@ -34,27 +43,37 @@ export default function ScreenshotButton() {
     });
   }
 
-  async function onMouseUp() {
+  async function onPointerUp() {
+    const finalRect = dragStart.current ? rect : null;
     dragStart.current = null;
-    if (!rect || rect.w < 10 || rect.h < 10) {
+    if (!finalRect || finalRect.w < 10 || finalRect.h < 10) {
       setRect(null);
       return;
     }
     setSelecting(false);
     setBusy(true);
     try {
-      const { default: html2canvas } = await import("html2canvas");
-      const canvas = await html2canvas(document.body, {
-        x: rect.x + window.scrollX,
-        y: rect.y + window.scrollY,
-        width: rect.w,
-        height: rect.h,
+      const { domToCanvas } = await import("modern-screenshot");
+      const fullCanvas = await domToCanvas(document.body, {
         backgroundColor: "#0b0b0c",
-        useCORS: true,
       });
+      const scaleX = fullCanvas.width / document.body.scrollWidth;
+      const scaleY = fullCanvas.height / document.body.scrollHeight;
+      const sx = (finalRect.x + window.scrollX) * scaleX;
+      const sy = (finalRect.y + window.scrollY) * scaleY;
+      const sw = finalRect.w * scaleX;
+      const sh = finalRect.h * scaleY;
+
+      const cropCanvas = document.createElement("canvas");
+      cropCanvas.width = Math.round(sw);
+      cropCanvas.height = Math.round(sh);
+      const ctx = cropCanvas.getContext("2d");
+      if (!ctx) throw new Error("no 2d context");
+      ctx.drawImage(fullCanvas, sx, sy, sw, sh, 0, 0, cropCanvas.width, cropCanvas.height);
+
       const link = document.createElement("a");
       link.download = `screenshot-dear-${Date.now()}.png`;
-      link.href = canvas.toDataURL("image/png");
+      link.href = cropCanvas.toDataURL("image/png");
       link.click();
     } catch {
       alert("Gagal mengambil screenshot. Coba lagi.");
@@ -92,24 +111,21 @@ export default function ScreenshotButton() {
       {selecting && (
         <div
           className="fixed inset-0 z-[100] cursor-crosshair"
-          style={{ background: "rgba(0,0,0,0.35)" }}
-          onMouseDown={onMouseDown}
-          onMouseMove={onMouseMove}
-          onMouseUp={onMouseUp}
+          style={{ background: "rgba(0,0,0,0.35)", touchAction: "none" }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
         >
           <div className="absolute top-4 left-1/2 -translate-x-1/2 py-2 px-4 bg-ar-surface border border-ar-goldline rounded-full text-[11.5px] text-ar-gold2 flex items-center gap-3">
             <span>Geser untuk pilih area, lepas untuk screenshot</span>
-            <button
-              onClick={cancelSelecting}
-              className="text-ar-dim underline cursor-pointer"
-            >
+            <button onClick={cancelSelecting} className="text-ar-dim underline cursor-pointer">
               Batal
             </button>
           </div>
           {rect && (
             <div
-              className="absolute border-2 border-ar-gold bg-ar-gold/10 pointer-events-none"
-              style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}
+              className="absolute border-2 border-ar-gold pointer-events-none"
+              style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h, background: "rgba(200,202,209,0.15)" }}
             />
           )}
         </div>
