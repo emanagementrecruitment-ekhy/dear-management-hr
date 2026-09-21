@@ -14,6 +14,10 @@ import { useRef, useState } from "react";
  * v4's color-mix()-based opacity utilities used throughout this app (e.g.
  * bg-ar-red/25), while modern-screenshot renders via an SVG <foreignObject>
  * so the browser itself does the styling — it handles color-mix/oklch fine.
+ *
+ * Rendered once from admin/layout.tsx (not per-page) as a fixed-position
+ * button so it stays put across every admin menu instead of disappearing
+ * when navigating away from whichever page happened to render it.
  */
 export default function ScreenshotButton() {
   const [selecting, setSelecting] = useState(false);
@@ -96,7 +100,7 @@ export default function ScreenshotButton() {
         disabled={busy}
         title="Screenshot area layar"
         aria-label="Screenshot area layar"
-        className="w-9 h-9 shrink-0 grid place-items-center bg-ar-surface2 border border-ar-goldline rounded-[8px] text-ar-gold cursor-pointer disabled:opacity-60"
+        className="fixed bottom-3 left-3 z-[90] w-9 h-9 shrink-0 grid place-items-center bg-ar-surface2 border border-ar-goldline rounded-[8px] text-ar-gold cursor-pointer disabled:opacity-60 shadow-lg"
       >
         {busy ? (
           <span className="text-[9px]">…</span>
