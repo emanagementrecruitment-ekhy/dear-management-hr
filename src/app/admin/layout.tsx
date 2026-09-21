@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { OFFICE_ROLES, type AccessRole } from "@/lib/constants";
@@ -26,6 +27,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
+      <div className="fixed inset-0 -z-10 flex items-center justify-center pointer-events-none select-none">
+        <Image src="/api/brand-logo" alt="" width={520} height={520} unoptimized className="object-contain opacity-[0.04]" />
+      </div>
       <AdminSidebar
         roleLabel={roleLabel}
         canApprove={session.accessRole === "OWNER" || session.accessRole === "CONSULTANT" || session.accessRole === "MANAGER"}

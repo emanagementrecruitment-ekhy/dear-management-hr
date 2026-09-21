@@ -81,15 +81,6 @@ export default function DesktopStatusBar() {
           {result.sent} data terkirim{result.failed > 0 ? `, ${result.failed} gagal (tetap tersimpan, coba sinkron lagi nanti).` : "."}
         </div>
       )}
-      <div
-        className={`px-3 py-1.5 rounded-full text-[10px] font-semibold tracking-[0.1em] uppercase border ${
-          mode === "online"
-            ? "bg-emerald-950/60 border-emerald-700 text-emerald-400"
-            : "bg-amber-950/60 border-amber-700 text-amber-400"
-        }`}
-      >
-        {mode === "online" ? "● Online (Railway)" : "● Offline (Lokal)"}
-      </div>
     </div>
   );
 }
