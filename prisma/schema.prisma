@@ -42,7 +42,10 @@ model Employee {
   channelLink String?      // manual free-text channel/link (e.g. WA/booking link), independent of Peran/supervisor
   supervisorId String?
   supervisor  Employee?    @relation("Supervision", fields: [supervisorId], references: [id])
-  supervisorNote String?   // manual free-text note when the actual supervisor isn't a registered Kepala Mess account
+  supervisorNote String?   // legacy free-text note — no longer editable from Data Karyawan/Tera (replaced by birthPlace/birthDate below), kept only so old values already saved keep displaying
+  birthPlace  String?      // tempat lahir sesuai KTP
+  birthDate   DateTime?    // tanggal lahir sesuai KTP — age is always computed live from this (see computeAge in src/lib/birthday.ts), never stored
+  lastBirthdayNotifiedYear Int? // guards the once-a-year office notification (see src/lib/birthday-scheduler.ts) so a restart mid-birthday never double-fires it
   reports     Employee[]   @relation("Supervision")
   createdAt   DateTime     @default(now())
   photoDataUrl   String?   // self-service profile photo, replacing the initials-monogram avatar when set

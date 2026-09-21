@@ -24,8 +24,10 @@ export async function register() {
   globalScope.__dearReminderSchedulerStarted = true;
 
   const { processDueReminders } = await import("./lib/reminder-scheduler");
+  const { checkBirthdaysToday } = await import("./lib/birthday-scheduler");
   const CHECK_INTERVAL_MS = 60_000;
   setInterval(() => {
     processDueReminders().catch((err) => console.error("[instrumentation] reminder check failed:", err));
+    checkBirthdaysToday().catch((err) => console.error("[instrumentation] birthday check failed:", err));
   }, CHECK_INTERVAL_MS);
 }

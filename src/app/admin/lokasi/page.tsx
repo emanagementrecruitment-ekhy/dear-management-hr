@@ -21,6 +21,8 @@ interface Presence extends MapPresence {
   supervisorId: string;
   channelLink: string;
   supervisorNote: string;
+  birthPlace: string | null;
+  birthDate: string | null;
   code: string;
   time: string;
   coord: string;
@@ -159,7 +161,8 @@ export default function LokasiPage() {
                 place: editing.place,
                 supervisorId: editing.supervisorId,
                 channelLink: editing.channelLink,
-                supervisorNote: editing.supervisorNote,
+                birthPlace: editing.birthPlace,
+                birthDate: editing.birthDate,
               }}
               supervisors={supervisors}
               onSaved={() => {
