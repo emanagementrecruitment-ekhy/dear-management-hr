@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
+import ScreenshotButton from "@/components/admin/ScreenshotButton";
 import Badge from "@/components/Badge";
 import { EMPLOYEE_LEVELS, VOUCHER_LABEL, VOUCHER_AMOUNT } from "@/lib/constants";
 import { fmtRp } from "@/lib/format";
@@ -42,7 +43,11 @@ export default function RingkasanPage() {
 
   return (
     <div>
-      <AdminPageHeader title="Ringkasan Operasional" subtitle="Aktivitas login, absensi, dan voucher komisi hari ini" />
+      <AdminPageHeader
+        title="Ringkasan Operasional"
+        subtitle="Aktivitas login, absensi, dan voucher komisi hari ini"
+        actions={<ScreenshotButton />}
+      />
 
       <div className="pt-5.5">
         <div className="grid gap-3.5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
