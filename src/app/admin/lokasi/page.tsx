@@ -55,6 +55,13 @@ export default function LokasiPage() {
 
   useEffect(() => {
     load();
+    // Keeps pins/status current without a manual refresh — matches the
+    // header's own online-count/clock ticker cadence elsewhere in admin.
+    const id = setInterval(load, 20_000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
     fetch("/api/auth/session")
       .then((r) => r.json())
       .then((d) => {

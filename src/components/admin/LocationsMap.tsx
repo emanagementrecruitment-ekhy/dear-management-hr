@@ -42,10 +42,15 @@ export default function LocationsMap({
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
-    const map = L.map(containerRef.current, { scrollWheelZoom: true }).setView([hq.lat, hq.lng], 5);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "© OpenStreetMap contributors",
-      maxZoom: 18,
+    // CARTO Voyager instead of plain OSM tiles — free, no API key, and reads
+    // much closer to Google Maps' road style (labeled streets, muted colors,
+    // building footprints) while still supporting deep zoom (up to 20, vs.
+    // OSM's usual 19 cap) for exact building-level placement.
+    const map = L.map(containerRef.current, { scrollWheelZoom: true, maxZoom: 20 }).setView([hq.lat, hq.lng], 5);
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+      attribution: "© OpenStreetMap contributors © CARTO",
+      subdomains: "abcd",
+      maxZoom: 20,
     }).addTo(map);
     mapRef.current = map;
     layerRef.current = L.layerGroup().addTo(map);
