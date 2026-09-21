@@ -17,7 +17,7 @@ datasource db {
 // SQLite has no native enum support, so enum-like fields are plain String
 // columns whose valid values are enforced in application code — see src/lib/constants.ts:
 //   AccessRole:      KARYAWAN | OWNER | CONSULTANT | ADMIN_PUSAT | SUPERVISOR | MANAGER
-//   EmployeeLevel:   SILVER | PLATINUM
+//   EmployeeLevel:   CLASSIC_D | FL | SILVER | GOLD | LB | PLATINUM | LV | MODEL | MANUAL
 //   VoucherStatus:   MENUNGGU_VALIDASI | TERVALIDASI | DICAIRKAN
 //   KasbonStatus:    MENUNGGU_OWNER | DISETUJUI | DITOLAK
 
