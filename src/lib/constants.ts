@@ -151,6 +151,24 @@ export const ATTENDANCE_PENALTY_AMOUNT = 500_000;
 // row can appear (no risk of a duplicate manual + automatic pair).
 export const ATTENDANCE_PENALTY_CATEGORY = "Pinalty Absensi";
 
+// Non-Tera karyawan (salaried staff) must self-check-in by this Asia/Jakarta
+// wall-clock deadline; more than LATE_CHECKIN_GRACE_MINUTES past it
+// auto-books a one-off deduction on that day's Slip Pay (see
+// ensureLateCheckinPenalty in src/lib/attendance.ts, called right after
+// POST /api/absensi/checkin). Tera are exempt — Pendapatan/VCR already
+// tracks their pay through voucher activity, not a fixed clock-in time.
+// Jakarta (WIB) is a fixed UTC+7 offset with no daylight saving, so the
+// deadline is computed directly in UTC rather than trusting the host's own
+// timezone (Railway defaults to UTC; nothing else in this file assumes a
+// particular server TZ either).
+export const LATE_CHECKIN_DEADLINE_HOUR = 12; // Asia/Jakarta, 24h clock
+export const LATE_CHECKIN_GRACE_MINUTES = 15;
+export const LATE_CHECKIN_PENALTY_AMOUNT = 200_000;
+// Distinct from PAYSLIP_COST_CATEGORIES below, same reasoning as
+// ATTENDANCE_PENALTY_CATEGORY above — only ensureLateCheckinPenalty() ever
+// applies this one.
+export const LATE_CHECKIN_PENALTY_CATEGORY = "Pinalty Terlambat Absen";
+
 // Preset cost/deduction categories for the Tera Slip Pay "Tambah Rincian"
 // dropdown (src/app/admin/payslip/page.tsx). Selecting one still goes
 // through the normal manual PayslipItem flow (Admin/Owner types the

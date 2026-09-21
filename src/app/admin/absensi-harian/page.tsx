@@ -25,6 +25,8 @@ interface Dashboard {
   monthLabel: string;
   daysInMonth: number;
   trackingStarted: boolean;
+  todayDay: number | null;
+  isFutureMonth: boolean;
   totalRegistered: number;
   totalVcrThisMonthLabel: string;
   avgPercentHadir: number;
@@ -141,11 +143,22 @@ export default function AbsensiHarianPage() {
                             </td>
                             {e.days.map((present, i) => {
                               const id = e.dayIds[i];
+                              const dayNum = i + 1;
+                              // A day only counts as "genuinely absent" once it's actually
+                              // over — today and any day after it just haven't happened yet.
+                              const isDecided =
+                                !data.isFutureMonth && (data.todayDay === null || dayNum < data.todayDay);
+                              const isAbsent = isDecided && !present;
                               const box = (
                                 <span
                                   className={`inline-block w-3.5 h-3.5 rounded-[3px] border ${
-                                    present ? "bg-ar-gold2 border-ar-gold2" : "border-ar-line"
+                                    present
+                                      ? "bg-ar-gold2 border-ar-gold2"
+                                      : isAbsent
+                                        ? "bg-ar-red/25 border-ar-red"
+                                        : "border-ar-line"
                                   }`}
+                                  title={isAbsent ? "Tidak absen" : undefined}
                                 />
                               );
                               return (

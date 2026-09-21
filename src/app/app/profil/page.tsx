@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import Badge from "@/components/Badge";
 import LogoutButton from "@/components/LogoutButton";
 import ProfilePhoto from "@/components/employee/ProfilePhoto";
 import RefreshAppButton from "@/components/employee/RefreshAppButton";
@@ -10,17 +9,10 @@ import { fmtRp, isLink } from "@/lib/format";
 
 export default async function ProfilPage() {
   const session = await getSession();
-  const [employee, logins] = await Promise.all([
-    prisma.employee.findUniqueOrThrow({
-      where: { id: session!.employeeId },
-      include: { supervisor: true },
-    }),
-    prisma.loginEvent.findMany({
-      where: { employeeId: session!.employeeId },
-      orderBy: { createdAt: "desc" },
-      take: 6,
-    }),
-  ]);
+  const employee = await prisma.employee.findUniqueOrThrow({
+    where: { id: session!.employeeId },
+    include: { supervisor: true },
+  });
 
   const mono = employee.name
     .split(" ")
@@ -87,22 +79,6 @@ export default async function ProfilPage() {
           <span className="text-ar-gold text-[11px]">Buka →</span>
         </Link>
       )}
-
-      <div className="text-[10px] tracking-[0.18em] uppercase text-ar-dim mt-5 mb-2.5">Riwayat login &amp; lokasi</div>
-      <div className="flex flex-col gap-2">
-        {logins.length === 0 && <div className="text-[12px] text-ar-faint py-3">Belum ada riwayat login.</div>}
-        {logins.map((l) => (
-          <div key={l.id} className="flex justify-between gap-2.5 items-center py-3 px-3.5 bg-ar-surface2 border border-ar-line rounded-xl">
-            <span>
-              <span className="block text-[12.5px]">{l.place ?? `${l.lat.toFixed(4)}, ${l.lng.toFixed(4)}`}</span>
-              <span className="block text-[10.5px] text-ar-dim mt-1">
-                {l.createdAt.toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })} · {l.distanceKm} km
-              </span>
-            </span>
-            <Badge status={l.inRadius ? "Dalam radius" : "Luar radius"} />
-          </div>
-        ))}
-      </div>
 
       <RefreshAppButton className="w-full mt-4.5 py-3.5 bg-ar-surface border border-ar-line rounded-xl text-ar-dim text-[11px] font-semibold tracking-[0.16em] uppercase cursor-pointer disabled:opacity-60" />
 

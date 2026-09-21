@@ -35,6 +35,18 @@ export async function getAppearanceSetting(): Promise<AppearanceSetting> {
   };
 }
 
+export interface Announcement {
+  text: string | null;
+  updatedAt: Date | null;
+}
+
+/** The single running-text banner shown to karyawan/Tera below the DEAR logo — see AppHeader.tsx. */
+export async function getAnnouncement(): Promise<Announcement> {
+  const row = await prisma.appSetting.findUnique({ where: { id: SETTING_ID } });
+  const text = row?.announcementText?.trim() || null;
+  return { text, updatedAt: text ? (row?.announcementUpdatedAt ?? null) : null };
+}
+
 export function logoUnlockDate(logoUpdatedAt: Date | null): Date | null {
   if (!logoUpdatedAt) return null;
   return new Date(logoUpdatedAt.getTime() + LOGO_LOCK_DAYS * 864e5);
