@@ -42,15 +42,16 @@ export default function LocationsMap({
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
-    // CARTO Voyager instead of plain OSM tiles — free, no API key, and reads
-    // much closer to Google Maps' road style (labeled streets, muted colors,
-    // building footprints) while still supporting deep zoom (up to 20, vs.
-    // OSM's usual 19 cap) for exact building-level placement.
-    const map = L.map(containerRef.current, { scrollWheelZoom: true, maxZoom: 20 }).setView([hq.lat, hq.lng], 5);
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-      attribution: "© OpenStreetMap contributors © CARTO",
-      subdomains: "abcd",
-      maxZoom: 20,
+    // CARTO's raster basemaps now require an API key (they used to be free/
+    // anonymous) — switching to them broke the map entirely in production
+    // ("API KEY REQUIRED" tiles). Back to plain OSM tiles, which stay free
+    // and keyless; 19 is OSM's actual documented max zoom (20 renders blank
+    // tiles past that in most areas, which is why the earlier CARTO attempt
+    // aimed higher — that headroom just isn't available without a paid key).
+    const map = L.map(containerRef.current, { scrollWheelZoom: true, maxZoom: 19 }).setView([hq.lat, hq.lng], 5);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap contributors",
+      maxZoom: 19,
     }).addTo(map);
     mapRef.current = map;
     layerRef.current = L.layerGroup().addTo(map);
