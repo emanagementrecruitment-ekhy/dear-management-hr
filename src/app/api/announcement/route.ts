@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { requireSession, apiError } from "@/lib/api-auth";
-import { getAnnouncement } from "@/lib/settings";
+import { getActiveAnnouncementText } from "@/lib/settings";
 
-/** Read-only — any logged-in session can see the current running-text banner. */
+/** Read-only — any logged-in session can see the current running-text banner (respects its start/end schedule). */
 export async function GET() {
   try {
     await requireSession();
-    const announcement = await getAnnouncement();
-    return NextResponse.json(announcement);
+    const text = await getActiveAnnouncementText();
+    return NextResponse.json({ text });
   } catch (e) {
     return apiError(e);
   }

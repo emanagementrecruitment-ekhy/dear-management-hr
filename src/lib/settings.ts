@@ -37,14 +37,30 @@ export async function getAppearanceSetting(): Promise<AppearanceSetting> {
 
 export interface Announcement {
   text: string | null;
+  startAt: Date | null; // null = shows immediately, no lower bound
+  endAt: Date | null; // null = never expires ("selamanya")
   updatedAt: Date | null;
 }
 
-/** The single running-text banner shown to karyawan/Tera below the DEAR logo — see AppHeader.tsx. */
+/** Raw announcement config, for the Kalender Pengingat editor — ignores the schedule window (the editor needs to see/edit it even while inactive). */
 export async function getAnnouncement(): Promise<Announcement> {
   const row = await prisma.appSetting.findUnique({ where: { id: SETTING_ID } });
-  const text = row?.announcementText?.trim() || null;
-  return { text, updatedAt: text ? (row?.announcementUpdatedAt ?? null) : null };
+  return {
+    text: row?.announcementText?.trim() || null,
+    startAt: row?.announcementStartAt ?? null,
+    endAt: row?.announcementEndAt ?? null,
+    updatedAt: row?.announcementUpdatedAt ?? null,
+  };
+}
+
+/** The running-text banner text to actually show right now (or null) — respects the start/end schedule. See AppHeader.tsx. */
+export async function getActiveAnnouncementText(): Promise<string | null> {
+  const { text, startAt, endAt } = await getAnnouncement();
+  if (!text) return null;
+  const now = Date.now();
+  if (startAt && now < startAt.getTime()) return null;
+  if (endAt && now > endAt.getTime()) return null;
+  return text;
 }
 
 export function logoUnlockDate(logoUpdatedAt: Date | null): Date | null {

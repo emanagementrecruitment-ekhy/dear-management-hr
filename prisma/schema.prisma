@@ -343,9 +343,14 @@ model AppSetting {
 
   // Single running-text announcement shown to karyawan/Tera below the DEAR
   // logo on every /app/* page (see AppHeader.tsx and /api/announcement) —
-  // set by Owner/Consultant/Admin Pusat/Manager, see /api/admin/announcement.
-  // null/empty text means no banner is shown.
+  // set from the Kalender Pengingat admin page by
+  // Owner/Consultant/Admin Pusat/Manager, see /api/admin/announcement.
+  // null/empty text means no banner is shown regardless of the schedule
+  // below. announcementStartAt null = show as soon as text is set (no
+  // lower bound); announcementEndAt null = never expires ("selamanya").
   announcementText        String?
+  announcementStartAt     DateTime?
+  announcementEndAt       DateTime?
   announcementUpdatedAt   DateTime?
   announcementUpdatedById String?
 

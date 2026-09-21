@@ -24,42 +24,6 @@ export default function PengaturanPage() {
   const [logoMsg, setLogoMsg] = useState("");
   const [saved, setSaved] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [canManageAnnouncement, setCanManageAnnouncement] = useState(false);
-  const [announcementText, setAnnouncementText] = useState("");
-  const [announcementBusy, setAnnouncementBusy] = useState(false);
-  const [announcementMsg, setAnnouncementMsg] = useState("");
-
-  function loadAnnouncement() {
-    fetch("/api/admin/announcement")
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((d) => {
-        setCanManageAnnouncement(true);
-        setAnnouncementText(d.text ?? "");
-      })
-      .catch(() => setCanManageAnnouncement(false));
-  }
-
-  useEffect(loadAnnouncement, []);
-
-  async function saveAnnouncement() {
-    setAnnouncementBusy(true);
-    setAnnouncementMsg("");
-    try {
-      const res = await fetch("/api/admin/announcement", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: announcementText }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setAnnouncementMsg(data.error ?? "Gagal menyimpan pengumuman.");
-        return;
-      }
-      setAnnouncementMsg("✓ Tersimpan.");
-    } finally {
-      setAnnouncementBusy(false);
-    }
-  }
 
   function load() {
     fetch("/api/admin/settings")
@@ -265,31 +229,6 @@ export default function PengaturanPage() {
             </div>
           )}
         </div>
-
-        {canManageAnnouncement && (
-          <div className="pt-4 border-t border-ar-line">
-            <div className="font-display text-[19px] text-ar-gold2 mb-1">Pengumuman Karyawan</div>
-            <div className="text-[11.5px] text-ar-dim mb-3 leading-[1.6]">
-              Teks berjalan yang tampil di bawah logo DEAR pada aplikasi karyawan/Tera. Kosongkan lalu simpan untuk
-              menyembunyikannya lagi.
-            </div>
-            <textarea
-              value={announcementText}
-              onChange={(e) => setAnnouncementText(e.target.value)}
-              placeholder="Contoh: Libur bersama tanggal 25 Desember, kantor pusat tutup."
-              rows={3}
-              className="w-full py-2.5 px-3.5 bg-ar-input border border-ar-goldline rounded-[10px] text-ar-text text-[12.5px] mb-2.5"
-            />
-            {announcementMsg && <div className="text-[11.5px] text-ar-green mb-2">{announcementMsg}</div>}
-            <button
-              disabled={announcementBusy}
-              onClick={saveAnnouncement}
-              className="py-2.5 px-5 ar-grad rounded-[10px] text-ar-ongold text-[11px] font-bold tracking-[0.14em] uppercase cursor-pointer disabled:opacity-60"
-            >
-              {announcementBusy ? "Menyimpan…" : "Simpan Pengumuman"}
-            </button>
-          </div>
-        )}
 
         {logo?.canManage && (
           <div className="pt-4 border-t border-ar-line">
