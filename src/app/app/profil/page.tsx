@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import LogoutButton from "@/components/LogoutButton";
@@ -9,8 +10,13 @@ import { fmtRp, isLink } from "@/lib/format";
 
 export default async function ProfilPage() {
   const session = await getSession();
+  // EmployeeLayout already redirects on a missing session, but its check
+  // doesn't re-run on every client-side navigation within /app — if the
+  // session expires while the tab stays open, this page's own getSession()
+  // call is what actually catches it.
+  if (!session) redirect("/login");
   const employee = await prisma.employee.findUniqueOrThrow({
-    where: { id: session!.employeeId },
+    where: { id: session.employeeId },
     include: { supervisor: true },
   });
 
@@ -70,7 +76,7 @@ export default async function ProfilPage() {
         <span className="text-ar-gold text-[11px]">Lihat →</span>
       </Link>
 
-      {session!.accessRole === "SUPERVISOR" && (
+      {session.accessRole === "SUPERVISOR" && (
         <Link
           href="/admin/lapor-lapangan"
           className="flex items-center justify-between mt-2.5 p-4 bg-ar-surface border border-ar-goldline rounded-2xl"
