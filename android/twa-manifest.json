@@ -20,8 +20,8 @@
     "path": "./android.keystore",
     "alias": "dearmanagement"
   },
-  "appVersionCode": 7,
-  "appVersion": "1.0.0",
+  "appVersionCode": 8,
+  "appVersion": "1.0.1",
   "shortcuts": [],
   "generatorApp": "manual",
   "webManifestUrl": "https://dear-management-hr-production.up.railway.app/manifest.webmanifest",
