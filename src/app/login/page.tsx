@@ -392,6 +392,12 @@ export default function LoginPage() {
           >
             ⬇ Unduh DEAR Management Desktop (Windows)
           </a>
+          <a
+            href="/downloads/iphone"
+            className="text-[10px] tracking-[0.14em] uppercase text-ar-gold border border-ar-goldline rounded-full px-4 py-2 hover:bg-ar-goldfill transition"
+          >
+            📱 Pasang di iPhone
+          </a>
         </div>
         <div className="mt-2.5 text-center text-[9px] text-ar-faint opacity-70">
           DEAR Management Desktop untuk Admin/Owner/Kepala Mess — bisa dipakai offline saat internet kantor mati.

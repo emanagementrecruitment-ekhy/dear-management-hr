@@ -52,6 +52,13 @@ export const metadata: Metadata = {
   title: "DEAR Management",
   description:
     "DEAR Management — agensi manajemen talenta & entertainment yang menghubungkan talenta profesional dengan mitra outlet terbaik di Jakarta.",
+  // iOS Safari ignores manifest.ts for "Add to Home Screen" — it only reads
+  // apple-touch-icon (via icons.apple below) and the appleWebApp meta tags,
+  // so both are needed for a real app-like icon/name on an iPhone home
+  // screen instead of a screenshot of the page.
+  icons: {
+    apple: "/icons/icon-192.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
