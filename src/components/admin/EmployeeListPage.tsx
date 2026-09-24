@@ -217,9 +217,20 @@ export default function EmployeeListPage({
                   : emptyLabel}
             </div>
           )}
-          {rows.map((e) =>
-            editingId === e.id ? (
-              <div key={e.code} className="px-4.5 border-t border-ar-line">
+          {rows.map((e, i) => {
+            // Rows arrive sorted by outlet (see /api/admin/employees) — drop a
+            // small heading whenever the outlet changes so the list reads as
+            // one outlet block after another instead of a flat name dump.
+            const showOutletHeading = i === 0 || e.place !== rows[i - 1].place;
+            return (
+              <div key={e.code}>
+                {showOutletHeading && (
+                  <div className="pt-3.5 pb-1.5 px-4.5 border-t border-ar-line text-[10px] tracking-[0.16em] uppercase text-ar-gold bg-ar-surface2">
+                    📍 {e.place}
+                  </div>
+                )}
+                {editingId === e.id ? (
+              <div className="px-4.5 border-t border-ar-line">
                 <EditEmployeeForm
                   employee={{
                     id: e.id,
@@ -248,14 +259,13 @@ export default function EmployeeListPage({
               </div>
             ) : (
               <div
-                key={e.code}
                 className="grid gap-3 py-3.5 px-4.5 border-t border-ar-line text-[12.5px] items-center"
                 style={{ gridTemplateColumns: cols }}
               >
                 <span>
                   <span className="block">{e.name}</span>
                   <span className="block text-[10.5px] text-ar-dim mt-1">
-                    {e.code} ·{" "}
+                    {e.code} · {e.place} ·{" "}
                     {isLink(e.role) ? (
                       <a href={e.role} target="_blank" rel="noopener noreferrer" className="text-ar-gold underline">
                         {e.role}
@@ -356,8 +366,10 @@ export default function EmployeeListPage({
                     </span>
                   ))}
               </div>
-            )
-          )}
+            )}
+              </div>
+            );
+          })}
           </div>
         </div>
 

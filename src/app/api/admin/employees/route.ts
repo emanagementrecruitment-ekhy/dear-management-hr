@@ -55,7 +55,11 @@ export async function GET(req: Request) {
           vouchers: { where: { occurredAt: { gte: start30 } } },
           kasbonRequests: { where: { status: "DISETUJUI" } },
         },
-        orderBy: { code: "asc" },
+        // Sorted by outlet/lokasi kerja first (then name within it) so Data
+        // Tera/Data Karyawan reads as one outlet block after another instead
+        // of an unrelated shuffle of AR-xx codes — easier to scan for
+        // everyone at a given outlet.
+        orderBy: [{ homePlace: "asc" }, { name: "asc" }],
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),

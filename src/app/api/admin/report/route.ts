@@ -22,7 +22,9 @@ export async function GET(req: Request) {
         vouchers: { where: { occurredAt: { gte: start } } },
         kasbonRequests: { where: { status: "DISETUJUI", createdAt: { gte: start } } },
       },
-      orderBy: { code: "asc" },
+      // Grouped by outlet/lokasi kerja first, same as Data Tera/Data
+      // Karyawan, so this combined report reads outlet-by-outlet too.
+      orderBy: [{ homePlace: "asc" }, { name: "asc" }],
     });
 
     const rows = employees.map((e) => {
@@ -31,6 +33,7 @@ export async function GET(req: Request) {
       const ks = e.kasbonRequests.reduce((s, k) => s + k.amount, 0);
       return {
         name: e.name,
+        place: e.homePlace,
         level,
         voucherCount: e.vouchers.length,
         rateLabel: fmtRp(employeeRate(level, e.customRate)),

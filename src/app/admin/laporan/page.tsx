@@ -8,6 +8,7 @@ type Period = "harian" | "mingguan" | "bulanan";
 
 interface ReportRow {
   name: string;
+  place: string;
   level: string;
   voucherCount: number;
   rateLabel: string;
@@ -27,7 +28,7 @@ const PERIODS: { key: Period; label: string }[] = [
   { key: "bulanan", label: "Bulanan" },
 ];
 
-const cols = "1.5fr 1fr .9fr 1.1fr 1fr 1.1fr";
+const cols = "1.3fr .8fr .8fr .9fr 1.1fr 1fr 1.1fr";
 
 export default function LaporanPage() {
   const [period, setPeriod] = useState<Period>("harian");
@@ -73,30 +74,45 @@ export default function LaporanPage() {
           <div className="min-w-[640px]">
           <div className="grid gap-3 py-3.5 px-4.5 bg-ar-surface2 text-[10px] tracking-[0.14em] uppercase text-ar-dim" style={{ gridTemplateColumns: cols }}>
             <span>Karyawan/Tera</span>
+            <span>Outlet</span>
             <span>Grade</span>
             <span>Total Voucher</span>
             <span>Pendapatan/Voucher</span>
             <span>Total Kasbon</span>
             <span>Sisa Gaji</span>
           </div>
-          {data?.rows.map((r, i) => (
-            <div key={i} className="grid gap-3 py-3.5 px-4.5 border-t border-ar-line text-[12.5px] items-center" style={{ gridTemplateColumns: cols }}>
-              <span>{r.name}</span>
-              <span className={r.level === "PLATINUM" || r.level === "MODEL" ? "text-ar-gold2" : "text-ar-dim"}>
-                {VOUCHER_LABEL[r.level as EmployeeLevel]}
-              </span>
-              <span>{r.voucherCount} vcr</span>
-              <span>{r.rateLabel}</span>
-              <span className="text-ar-red">{r.kasbon}</span>
-              <span className="font-display text-[18px] text-ar-gold2">{r.net}</span>
-            </div>
-          ))}
+          {data?.rows.map((r, i) => {
+            // Rows arrive sorted by outlet (see /api/admin/report) — same
+            // outlet-block grouping as Data Tera/Data Karyawan.
+            const showOutletHeading = i === 0 || r.place !== data.rows[i - 1].place;
+            return (
+              <div key={i}>
+                {showOutletHeading && (
+                  <div className="pt-3.5 pb-1.5 px-4.5 border-t border-ar-line text-[10px] tracking-[0.16em] uppercase text-ar-gold bg-ar-surface2">
+                    📍 {r.place}
+                  </div>
+                )}
+                <div className="grid gap-3 py-3.5 px-4.5 border-t border-ar-line text-[12.5px] items-center" style={{ gridTemplateColumns: cols }}>
+                  <span>{r.name}</span>
+                  <span className="text-ar-dim">{r.place}</span>
+                  <span className={r.level === "PLATINUM" || r.level === "MODEL" ? "text-ar-gold2" : "text-ar-dim"}>
+                    {VOUCHER_LABEL[r.level as EmployeeLevel]}
+                  </span>
+                  <span>{r.voucherCount} vcr</span>
+                  <span>{r.rateLabel}</span>
+                  <span className="text-ar-red">{r.kasbon}</span>
+                  <span className="font-display text-[18px] text-ar-gold2">{r.net}</span>
+                </div>
+              </div>
+            );
+          })}
           {data && (
             <div
               className="grid gap-3 py-4 px-4.5 border-t border-ar-goldline bg-ar-goldfill text-[12.5px] items-center"
               style={{ gridTemplateColumns: cols }}
             >
               <span className="tracking-[0.14em] uppercase text-[10.5px] text-ar-gold">Total {data.periodLabel}</span>
+              <span />
               <span />
               <span>{data.totals.voucherCount} vcr</span>
               <span />
