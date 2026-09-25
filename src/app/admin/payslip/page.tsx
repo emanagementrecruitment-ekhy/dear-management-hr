@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AdminPageHeader from "@/components/admin/AdminPageHeader";
+import EmployeePicker from "@/components/admin/EmployeePicker";
 import PayslipDocument from "@/components/PayslipDocument";
 import type { Payslip } from "@/lib/payslip";
 import { PAYSLIP_COST_CATEGORIES, usesVcr, type EmployeeLevel } from "@/lib/constants";
@@ -13,6 +14,7 @@ interface EmployeeOption {
   name: string;
   code: string;
   role: string;
+  place: string;
 }
 
 interface RecurringCost {
@@ -88,6 +90,7 @@ export default function AdminPayslipPage() {
             name: e.name,
             code: e.code,
             role: e.role,
+            place: e.place,
           }))
         )
       );
@@ -346,21 +349,16 @@ export default function AdminPayslipPage() {
         <div className="flex flex-col gap-4">
           <div className="p-5 bg-ar-surface border border-ar-line rounded-2xl">
             <label className="text-[10px] tracking-[0.14em] uppercase text-ar-dim mb-1.5 block">Karyawan/Tera</label>
-            <select
-              value={employeeId}
-              onChange={(e) => {
-                setEmployeeId(e.target.value);
-                resetForm();
-              }}
-              className="w-full py-2.5 px-3.5 mb-3.5 bg-ar-input border border-ar-goldline rounded-[10px] text-ar-text text-[12.5px]"
-            >
-              <option value="">Pilih karyawan…</option>
-              {employees.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.name} ({e.code})
-                </option>
-              ))}
-            </select>
+            <div className="mb-3.5">
+              <EmployeePicker
+                employees={employees}
+                value={employeeId}
+                onChange={(id) => {
+                  setEmployeeId(id);
+                  resetForm();
+                }}
+              />
+            </div>
 
             <label className="text-[10px] tracking-[0.14em] uppercase text-ar-dim mb-1.5 block">Bulan</label>
             <input
