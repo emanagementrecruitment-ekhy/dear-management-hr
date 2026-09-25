@@ -364,6 +364,13 @@ model AppSetting {
   // Tera an admin adds afterward.
   teraPurgeAt DateTime?
 
+  // Guards prisma/merge-duplicate-tera.ts (see start:railway) — a one-time
+  // merge of Tera who ended up with two accounts: an older placeholder
+  // (@dear.id email) auto-created by the Rekap Pendapatan/VCR bulk importer,
+  // and the real-contact account from the September 2026 onboarding batch
+  // (prisma/import-tera-2026-09.ts). Same one-shot pattern as teraPurgeAt.
+  teraDuplicateMergeAt DateTime?
+
   updatedAt DateTime @updatedAt
 }
 
