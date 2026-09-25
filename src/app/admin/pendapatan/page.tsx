@@ -22,6 +22,19 @@ interface Entry {
   occurredAt: string;
 }
 
+interface EntryDetail {
+  employeeId: string;
+  employeeName: string;
+  employeeCode: string;
+  category: EmployeeLevel;
+  client: string;
+  amount: number;
+  qty: number;
+  occurredAt: string;
+  mixed: boolean;
+  total: number;
+}
+
 function today() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -54,6 +67,18 @@ export default function PendapatanPage() {
   const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
+
+  const [editKey, setEditKey] = useState<string | null>(null);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editDetail, setEditDetail] = useState<EntryDetail | null>(null);
+  const [editCategory, setEditCategory] = useState<EmployeeLevel>("SILVER");
+  const [editClient, setEditClient] = useState("");
+  const [editAmount, setEditAmount] = useState("");
+  const [editQty, setEditQty] = useState("1");
+  const [editOccurredAt, setEditOccurredAt] = useState(today());
+  const [editBusy, setEditBusy] = useState(false);
+  const [editMsg, setEditMsg] = useState("");
+  const [confirmDeleteKey, setConfirmDeleteKey] = useState<string | null>(null);
 
   function load() {
     fetch("/api/admin/employees?pageSize=500")
@@ -132,6 +157,84 @@ export default function PendapatanPage() {
       setImportBusy(false);
     }
   }
+
+  async function openEdit(entry: Entry) {
+    setEditKey(entry.id);
+    setEditLoading(true);
+    setEditMsg("");
+    setEditDetail(null);
+    try {
+      const res = await fetch(`/api/admin/vouchers/${encodeURIComponent(entry.id)}`);
+      const data = await res.json();
+      if (!res.ok) {
+        setEditMsg(data.error ?? "Gagal memuat entri.");
+        return;
+      }
+      setEditDetail(data);
+      setEditCategory(data.category);
+      setEditClient(data.client);
+      setEditAmount(String(data.amount));
+      setEditQty(String(data.qty));
+      setEditOccurredAt(data.occurredAt);
+    } finally {
+      setEditLoading(false);
+    }
+  }
+
+  function closeEdit() {
+    setEditKey(null);
+    setEditDetail(null);
+    setEditMsg("");
+    setConfirmDeleteKey(null);
+  }
+
+  async function saveEdit() {
+    if (!editKey) return;
+    setEditBusy(true);
+    setEditMsg("");
+    try {
+      const res = await fetch(`/api/admin/vouchers/${encodeURIComponent(editKey)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category: editCategory,
+          client: editClient,
+          amount: Number(editAmount),
+          qty: Number(editQty),
+          occurredAt: editOccurredAt,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setEditMsg(data.error ?? "Gagal menyimpan perubahan.");
+        return;
+      }
+      closeEdit();
+      load();
+    } finally {
+      setEditBusy(false);
+    }
+  }
+
+  async function deleteEntry() {
+    if (!editKey) return;
+    setEditBusy(true);
+    setEditMsg("");
+    try {
+      const res = await fetch(`/api/admin/vouchers/${encodeURIComponent(editKey)}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) {
+        setEditMsg(data.error ?? "Gagal menghapus entri.");
+        return;
+      }
+      closeEdit();
+      load();
+    } finally {
+      setEditBusy(false);
+    }
+  }
+
+  const editTotal = (Number(editAmount) || 0) * (Number(editQty) || 0);
 
   return (
     <div>
@@ -329,20 +432,164 @@ export default function PendapatanPage() {
             {entries.length === 0 && <div className="text-[12.5px] text-ar-faint">Belum ada entri.</div>}
             {entries.map((e) => (
               <div key={e.id} className="p-3 bg-ar-surface2 border border-ar-line rounded-[11px] text-[12px]">
-                <div className="flex justify-between gap-2">
+                <div className="flex justify-between gap-2 items-start">
                   <span>
                     {e.employeeName} <span className="text-ar-dim">({e.employeeCode})</span>
                   </span>
-                  <span className="text-ar-gold2 font-display text-[15px]">{e.amount}</span>
+                  <span className="text-ar-gold2 font-display text-[15px] whitespace-nowrap">{e.amount}</span>
                 </div>
-                <div className="text-[10.5px] text-ar-dim mt-1">
-                  {e.count} voucher · {e.occurredAt}
+                <div className="flex justify-between items-center gap-2 mt-1">
+                  <span className="text-[10.5px] text-ar-dim">
+                    {e.count} voucher · {e.occurredAt}
+                  </span>
+                  <button
+                    onClick={() => openEdit(e)}
+                    className="text-[10.5px] text-ar-gold cursor-pointer whitespace-nowrap"
+                  >
+                    Edit
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         </div>
       </div>
+
+      {editKey && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-5 overflow-y-auto"
+          onClick={(ev) => ev.target === ev.currentTarget && closeEdit()}
+        >
+          <div className="w-full max-w-[420px] mt-[70px] p-5 bg-ar-surface border border-ar-goldline rounded-2xl">
+            <div className="flex justify-between items-center mb-3.5">
+              <div className="font-display text-[19px] text-ar-gold2">Edit Pendapatan</div>
+              <button onClick={closeEdit} className="text-ar-dim text-[11px] cursor-pointer">
+                Tutup
+              </button>
+            </div>
+
+            {editLoading && <div className="text-[12.5px] text-ar-faint">Memuat…</div>}
+
+            {!editLoading && editDetail && (
+              <>
+                <div className="mb-3.5 text-[12.5px] text-ar-text">
+                  {editDetail.employeeName} <span className="text-ar-dim">({editDetail.employeeCode})</span>
+                </div>
+                {editDetail.mixed && (
+                  <div className="mb-3.5 py-2 px-3 bg-[rgba(240,180,80,.12)] border border-[rgba(240,180,80,.35)] rounded-lg text-[11px] text-ar-gold">
+                    ⚠ Entri hari ini punya kategori/rate/lokasi yang berbeda-beda per voucher — menyimpan di sini akan
+                    menyeragamkan semuanya jadi satu nilai.
+                  </div>
+                )}
+
+                <div className="grid gap-3.5">
+                  <div>
+                    <label className="text-[10px] tracking-[0.14em] uppercase text-ar-dim mb-1.5 block">Tanggal</label>
+                    <input
+                      type="date"
+                      value={editOccurredAt}
+                      onChange={(ev) => setEditOccurredAt(ev.target.value)}
+                      className="w-full py-2.5 px-3.5 bg-ar-input border border-ar-goldline rounded-[10px] text-ar-text text-[12.5px]"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] tracking-[0.14em] uppercase text-ar-dim mb-1.5 block">Pendapatan / VCR</label>
+                    <select
+                      value={editCategory}
+                      onChange={(ev) => setEditCategory(ev.target.value as EmployeeLevel)}
+                      className="w-full py-2.5 px-3.5 bg-ar-input border border-ar-goldline rounded-[10px] text-ar-text text-[12.5px]"
+                    >
+                      {EMPLOYEE_LEVELS.map((lvl) => (
+                        <option key={lvl} value={lvl}>
+                          {VOUCHER_LABEL[lvl]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] tracking-[0.14em] uppercase text-ar-dim mb-1.5 block">Lokasi Kerja</label>
+                    <select
+                      value={editClient}
+                      onChange={(ev) => setEditClient(ev.target.value)}
+                      className="w-full py-2.5 px-3.5 bg-ar-input border border-ar-goldline rounded-[10px] text-ar-text text-[12.5px]"
+                    >
+                      {editClient && !FIELD_CITIES.some((c) => c.place === editClient) && (
+                        <option value={editClient}>{editClient} (lama)</option>
+                      )}
+                      {FIELD_CITIES.map((c) => (
+                        <option key={c.place} value={c.place}>
+                          {c.place}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3.5">
+                    <div>
+                      <label className="text-[10px] tracking-[0.14em] uppercase text-ar-dim mb-1.5 block">Rate /VCR</label>
+                      <input
+                        type="number"
+                        value={editAmount}
+                        onChange={(ev) => setEditAmount(ev.target.value)}
+                        className="w-full py-2.5 px-3.5 bg-ar-input border border-ar-goldline rounded-[10px] text-ar-text text-[12.5px]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] tracking-[0.14em] uppercase text-ar-dim mb-1.5 block">Jumlah VCR</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={editQty}
+                        onChange={(ev) => setEditQty(ev.target.value)}
+                        className="w-full py-2.5 px-3.5 bg-ar-input border border-ar-goldline rounded-[10px] text-ar-text text-[12.5px]"
+                      />
+                    </div>
+                  </div>
+                  <div className="py-2.5 px-3.5 bg-ar-goldfill border border-ar-goldline rounded-[10px] text-[12.5px] text-ar-gold2">
+                    {fmtRp(Number(editAmount) || 0)} × {Number(editQty) || 0} = <strong>{fmtRp(editTotal)}</strong>
+                  </div>
+                </div>
+
+                {editMsg && <div className="mt-3.5 text-[11.5px] text-ar-red">{editMsg}</div>}
+
+                <div className="flex gap-2.5 mt-3.5">
+                  <button
+                    disabled={editBusy || !editClient || !editQty || Number(editQty) <= 0}
+                    onClick={saveEdit}
+                    className="flex-1 py-2.5 ar-grad rounded-[10px] text-ar-ongold text-[11px] font-bold tracking-[0.14em] uppercase cursor-pointer disabled:opacity-60"
+                  >
+                    {editBusy ? "Menyimpan…" : "Simpan Perubahan"}
+                  </button>
+                </div>
+
+                <div className="mt-3.5 pt-3.5 border-t border-ar-line">
+                  {confirmDeleteKey === editKey ? (
+                    <div className="flex items-center gap-3">
+                      <span className="text-[11px] text-ar-red flex-1">Hapus seluruh entri hari ini? Tidak bisa dibatalkan.</span>
+                      <button
+                        disabled={editBusy}
+                        onClick={deleteEntry}
+                        className="text-[11px] text-ar-red font-semibold cursor-pointer whitespace-nowrap"
+                      >
+                        Ya, Hapus
+                      </button>
+                      <button onClick={() => setConfirmDeleteKey(null)} className="text-[11px] text-ar-dim cursor-pointer">
+                        Batal
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmDeleteKey(editKey)}
+                      className="text-[11px] text-ar-red cursor-pointer"
+                    >
+                      Hapus Entri Ini
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
