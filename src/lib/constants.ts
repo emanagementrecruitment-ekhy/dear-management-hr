@@ -202,9 +202,14 @@ export const PAYSLIP_COST_CATEGORIES = [
 // OWNER_ACCOUNT_CODE below and /dev/nav-layout — so Jabatan Kantor lists the
 // re-appointable office seats: Admin, Kepala Mess, and Manager (equal to
 // Owner in every permission except the Owner Identity feature itself).
-export const APPOINTABLE_ROLES: { peran: string; accessRole: AccessRole; label: string; appointerRoles?: AccessRole[] }[] = [
+// `multi: true` lets a seat be held by more than one employee at once —
+// appointing someone new adds them instead of demoting whoever's already
+// there (see POST /api/admin/jabatan). Kepala Mess is the one seat that
+// needs this: a mess can have several supervisors on site at once, unlike
+// Admin/Manager which stay single-holder (appointing replaces the incumbent).
+export const APPOINTABLE_ROLES: { peran: string; accessRole: AccessRole; label: string; appointerRoles?: AccessRole[]; multi?: boolean }[] = [
   { peran: "Admin", accessRole: "ADMIN_PUSAT", label: "Admin" },
-  { peran: "Kepala Mess", accessRole: "SUPERVISOR", label: "Kepala Mess" },
+  { peran: "Kepala Mess", accessRole: "SUPERVISOR", label: "Kepala Mess", multi: true },
   { peran: "Manager", accessRole: "MANAGER", label: "Manager" },
 ];
 

@@ -11,8 +11,8 @@ export async function GET() {
 
     const seats = await Promise.all(
       APPOINTABLE_ROLES.map(async (seat) => {
-        const [holder, candidates] = await Promise.all([
-          prisma.employee.findFirst({ where: { accessRole: seat.accessRole }, orderBy: { createdAt: "asc" } }),
+        const [holders, candidates] = await Promise.all([
+          prisma.employee.findMany({ where: { accessRole: seat.accessRole }, orderBy: { createdAt: "asc" } }),
           prisma.employee.findMany({
             where: { accessRole: "KARYAWAN", role: seat.peran },
             select: { id: true, name: true, code: true },
@@ -24,7 +24,8 @@ export async function GET() {
           peran: seat.peran,
           accessRole: seat.accessRole,
           label: seat.label,
-          holder: holder ? { id: holder.id, name: holder.name, code: holder.code, email: holder.email } : null,
+          multi: !!seat.multi,
+          holders: holders.map((h) => ({ id: h.id, name: h.name, code: h.code, email: h.email })),
           candidates,
           canAppoint: appointerRoles.includes(session.accessRole),
           // CONSULTANT is the vendor's own reserved support tier — never named
@@ -65,11 +66,44 @@ export async function POST(req: Request) {
       throw new ApiAuthError(400, `Karyawan ini belum punya Peran "${peran}" — ubah Peran-nya dulu di Data Karyawan.`);
     }
 
-    await prisma.$transaction([
-      // Whoever currently holds the seat is demoted back to a plain field employee.
-      prisma.employee.updateMany({ where: { accessRole: seat.accessRole }, data: { accessRole: "KARYAWAN" } }),
-      prisma.employee.update({ where: { id: employee.id }, data: { accessRole: seat.accessRole } }),
-    ]);
+    if (seat.multi) {
+      // Multi-holder seat (Kepala Mess): add alongside whoever already holds it.
+      await prisma.employee.update({ where: { id: employee.id }, data: { accessRole: seat.accessRole } });
+    } else {
+      await prisma.$transaction([
+        // Whoever currently holds the seat is demoted back to a plain field employee.
+        prisma.employee.updateMany({ where: { accessRole: seat.accessRole }, data: { accessRole: "KARYAWAN" } }),
+        prisma.employee.update({ where: { id: employee.id }, data: { accessRole: seat.accessRole } }),
+      ]);
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    return apiError(e);
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const session = await requireSession([...MANAGERS]);
+    const body = await req.json().catch(() => null);
+    const employeeId = typeof body?.employeeId === "string" ? body.employeeId : "";
+    const peran = typeof body?.peran === "string" ? body.peran : "";
+
+    const seat = APPOINTABLE_ROLES.find((s) => s.peran === peran);
+    if (!seat) return NextResponse.json({ error: "Jabatan tidak dikenali." }, { status: 400 });
+
+    const appointerRoles = seat.appointerRoles ?? [...MANAGERS];
+    if (!appointerRoles.includes(session.accessRole)) {
+      throw new ApiAuthError(403, `Hanya ${appointerRoles.join("/")} yang bisa menurunkan jabatan "${seat.peran}".`);
+    }
+
+    const employee = await prisma.employee.findUnique({ where: { id: employeeId } });
+    if (!employee || employee.accessRole !== seat.accessRole) {
+      return NextResponse.json({ error: "Karyawan ini sedang tidak menjabat." }, { status: 400 });
+    }
+
+    await prisma.employee.update({ where: { id: employee.id }, data: { accessRole: "KARYAWAN" } });
 
     return NextResponse.json({ ok: true });
   } catch (e) {

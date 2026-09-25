@@ -9,11 +9,19 @@ interface Candidate {
   code: string;
 }
 
+interface Holder {
+  id: string;
+  name: string;
+  code: string;
+  email: string;
+}
+
 interface Seat {
   peran: string;
   accessRole: string;
   label: string;
-  holder: { id: string; name: string; code: string; email: string } | null;
+  multi: boolean;
+  holders: Holder[];
   candidates: Candidate[];
   canAppoint: boolean;
   appointerLabel: string;
@@ -57,6 +65,26 @@ export default function JabatanPage() {
     }
   }
 
+  async function release(peran: string, employeeId: string) {
+    setBusy(true);
+    setMsg("");
+    try {
+      const res = await fetch("/api/admin/jabatan", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ peran, employeeId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMsg(data.error ?? "Gagal menurunkan jabatan.");
+        return;
+      }
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div>
       <AdminPageHeader
@@ -68,12 +96,30 @@ export default function JabatanPage() {
         {seats.map((seat) => (
           <div key={seat.peran} className="p-5 bg-ar-surface border border-ar-line rounded-2xl">
             <div className="text-[10.5px] tracking-[0.18em] uppercase text-ar-dim mb-2">{seat.label}</div>
-            {seat.holder ? (
-              <div className="mb-3.5">
-                <div className="font-display text-[19px] text-ar-gold2">{seat.holder.name}</div>
-                <div className="text-[11px] text-ar-dim mt-1">
-                  {seat.holder.code} · {seat.holder.email}
-                </div>
+            {seat.multi && (
+              <div className="text-[10px] text-ar-faint mb-2">Bisa dijabat lebih dari satu orang.</div>
+            )}
+            {seat.holders.length > 0 ? (
+              <div className="mb-3.5 space-y-2.5">
+                {seat.holders.map((h) => (
+                  <div key={h.id} className="flex items-start justify-between gap-2.5">
+                    <div>
+                      <div className="font-display text-[19px] text-ar-gold2">{h.name}</div>
+                      <div className="text-[11px] text-ar-dim mt-1">
+                        {h.code} · {h.email}
+                      </div>
+                    </div>
+                    {seat.canAppoint && (
+                      <button
+                        disabled={busy}
+                        onClick={() => release(seat.peran, h.id)}
+                        className="shrink-0 py-1.5 px-3 bg-ar-surface2 border border-ar-line rounded-[8px] text-ar-red text-[10.5px] cursor-pointer disabled:opacity-60"
+                      >
+                        Lepas
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="mb-3.5 text-[12.5px] text-ar-faint">Belum ada yang menjabat.</div>
@@ -123,7 +169,7 @@ export default function JabatanPage() {
                 onClick={() => setPickerFor(seat.peran)}
                 className="py-2 px-3.5 bg-ar-surface2 border border-ar-line rounded-[9px] text-ar-gold text-[11px] cursor-pointer"
               >
-                {seat.holder ? "Ganti" : "Angkat"}
+                {seat.multi ? "Tambah" : seat.holders.length > 0 ? "Ganti" : "Angkat"}
               </button>
             ) : (
               <div className="text-[11px] text-ar-faint">Hanya {seat.appointerLabel} yang bisa mengangkat jabatan ini.</div>
@@ -135,8 +181,9 @@ export default function JabatanPage() {
       {msg && <div className="mt-3.5 text-[11.5px] text-ar-red">{msg}</div>}
 
       <div className="mt-3.5 py-4 px-4.5 bg-ar-surface2 border border-ar-line rounded-2xl text-[11.5px] leading-[1.75] text-ar-dim">
-        Karyawan yang diangkat akan langsung punya akses login sesuai jabatannya. Yang digantikan otomatis kembali
-        jadi karyawan biasa (kehilangan akses kantor).
+        Karyawan yang diangkat akan langsung punya akses login sesuai jabatannya. Untuk Admin dan Manager, mengangkat
+        karyawan baru otomatis menggantikan yang lama (yang digantikan kembali jadi karyawan biasa). Kepala Mess bisa
+        dijabat lebih dari satu orang sekaligus — gunakan tombol &quot;Lepas&quot; untuk menurunkan salah satunya bila perlu.
       </div>
     </div>
   );
