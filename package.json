@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "db:seed": "tsx prisma/seed.ts",
-    "start:railway": "prisma migrate deploy && node prisma/seed-if-empty.js && tsx prisma/cleanup-demo-employees.ts && tsx prisma/ensure-office-accounts.ts && tsx prisma/ensure-demo-tera.ts && tsx prisma/purge-tera-employees.ts && tsx prisma/import-tera-2026-09.ts && next start -p ${PORT:-3000}"
+    "start:railway": "prisma migrate deploy && node prisma/seed-if-empty.js && tsx prisma/cleanup-demo-employees.ts && tsx prisma/ensure-office-accounts.ts && tsx prisma/ensure-demo-tera.ts && tsx prisma/purge-tera-employees.ts && tsx prisma/import-tera-2026-09.ts && tsx prisma/dry-run-find-duplicates.ts && next start -p ${PORT:-3000}"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
